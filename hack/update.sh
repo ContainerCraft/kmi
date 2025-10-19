@@ -52,6 +52,16 @@ debian::11() {
 	sed -i "s/ARM64_SHA512SUM=.*/ARM64_SHA512SUM=${arm64_sha512sum}/" "${file}"
 }
 
+debian::13() {
+	local file="images/debian-13/env.sh"
+	source "${file}"
+	local response=$(curl -s "${BASE_URL}"/SHA512SUMS)
+	local amd64_sha512sum=$(echo "${response}" | grep debian-13-generic-amd64.qcow2 | awk -F ' ' '{print $1}')
+	local arm64_sha512sum=$(echo "${response}" | grep debian-13-generic-arm64.qcow2 | awk -F ' ' '{print $1}')
+	sed -i "s/AMD64_SHA512SUM=.*/AMD64_SHA512SUM=${amd64_sha512sum}/" "${file}"
+	sed -i "s/ARM64_SHA512SUM=.*/ARM64_SHA512SUM=${arm64_sha512sum}/" "${file}"
+}
+
 centos::8() {
 	local file="images/centos-8/env.sh"
 	local new_build=$(curl -s https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM \
@@ -107,6 +117,7 @@ ubuntu::22-04
 fedora::37
 debian::10
 debian::11
+debian::13
 centos::8
 #centos::9
 rocky::8

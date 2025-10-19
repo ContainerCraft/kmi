@@ -16,6 +16,7 @@ aliases:
   debian-flavors: &_debian-flavors
     - debian-10
     - debian-11
+    - debian-13
 
   fcos-flavors: &_fcos-flavors
     - fcos-35

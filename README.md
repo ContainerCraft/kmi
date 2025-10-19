@@ -17,7 +17,7 @@ The CCIO kmi project aims to maintain all published distributions up to date wit
 | [Amazon Linux]   |        |          |    X    |          | |    X   |       |
 | [Arch Linux]     |        |          |         |          | |        |       |
 | [CentOS]         |        |     X    |         |          | |    X   |   X   |
-| [Debian]         |        |     X    |         |          | |    X   |   X   |
+| [Debian]         |        |     X    |    X    |          | |    X   |   X   |
 | [Fedora]         |        |     X    |         |          | |    X   |   X   |
 | [Fedora CoreOS]  |        |     X    |         |          | |    X   |   X   |
 | [FreeBSD]        |        |          |    X    |          | |    X   |       |

@@ -80,6 +80,17 @@ target "debian-11" {
   }
 }
 
+target "debian-13" {
+  inherits = ["defaults"]
+  tags = [
+    tag("debian", "13"),
+    tag("debian", "trixie"),
+  ]
+  args = {
+    FLAVOR = "debian-13"
+  }
+}
+
 target "opensuse-leap-15" {
   inherits = ["defaults"]
   platforms = ["linux/amd64"]
