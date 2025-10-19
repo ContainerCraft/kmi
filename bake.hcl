@@ -29,7 +29,7 @@ function "tag" {
   result = equal("", REPO) ? "docker.io/containercraft/${image}:${tag}-${FLAG}" : "${REPO}/${image}:${tag}-${FLAG}"
 }
 
-target "ubuntu-22.04" {
+target "ubuntu-22-04" {
   inherits = ["defaults"]
   tags = [
     tag("ubuntu", "22.04"),
