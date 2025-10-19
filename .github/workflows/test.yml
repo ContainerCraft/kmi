@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       flavor:
-        description: "Image Flavor to test (ex. ubuntu-22.04)"
+        description: "Image Flavor to test (ex. ubuntu-22-04)"
         required: true
 env:
-  FLAVOR: ${{ github.event.inputs.flavor || 'ubuntu-22.04' }}
+  FLAVOR: ${{ github.event.inputs.flavor || 'ubuntu-22-04' }}
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
           bats tests/run.bats --show-output-of-passing-tests --timing --verbose-run
 
       - name: Archive test logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ${{ env.FLAVOR }}-logs
