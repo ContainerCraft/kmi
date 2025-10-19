@@ -1,4 +1,5 @@
-VIRT_SYSPREP_OPERATIONS=user-account,logfiles,customize,bash-history,net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
+#VIRT_SYSPREP_OPERATIONS=user-account,logfiles,customize,bash-history,net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
+VIRT_SYSPREP_OPERATIONS=user-account,logfiles,customize,bash-history,machine-id,tmp-files,smolt-uuid,package-manager-cache
 BASE_URL=https://cloud.debian.org/images/cloud/trixie/latest/
 DOWNLOAD_FILE=debian-13-generic-${ARCH}.qcow2
 AMD64_SHA512SUM=0449ce335d0780af6290dd0b1c11c1e5231a73a3a1fc3e49ba8172853d26f5002e02830352d91ab9894442d29c8d352b21cb6c1c29f3b0f995d968ae4b573452

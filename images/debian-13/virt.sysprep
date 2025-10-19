@@ -1,2 +1,3 @@
+update
 install curl,tmux,git,vim,net-tools,qemu-guest-agent,cloud-init,cloud-initramfs-growroot
 run-command systemctl enable qemu-guest-agent
