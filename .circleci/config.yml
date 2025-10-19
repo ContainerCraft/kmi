@@ -346,7 +346,7 @@ jobs:
       FLAVOR: << parameters.flavor >>
       ARCH: << parameters.arch >>
     steps:
-      - checkout
+      - checkout-https
       - halt-if-no-changes:
           flavor: << parameters.flavor >>
       - prepare-qcow2:
@@ -363,7 +363,7 @@ jobs:
     environment:
       FLAVOR: << parameters.flavor >>
     steps:
-      - checkout
+      - checkout-https
       - halt-if-no-changes:
           flavor: << parameters.flavor >>
       - cradle-qcow2:
@@ -376,7 +376,7 @@ jobs:
       flavor:
         type: string
     steps:
-      - checkout
+      - checkout-https
       - halt-if-no-changes:
           flavor: << parameters.flavor >>
       - trigger-gha-test:
@@ -386,6 +386,19 @@ jobs:
 #################################################################################
 # Reuseable Commands
 commands:
+  checkout-https:
+    description: "Checkout code via HTTPS (recommended for public repos)"
+    steps:
+      - run:
+          name: Checkout code via HTTPS
+          command: |
+            set -ex
+            # Clone the repository using HTTPS instead of SSH
+            git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git .
+            # Checkout the specific branch/commit
+            git fetch --depth=1 origin ${CIRCLE_SHA1}
+            git checkout ${CIRCLE_SHA1}
+
   halt-if-no-changes:
     description: "Halt the build if nothing has changed from origin/HEAD"
     parameters:
