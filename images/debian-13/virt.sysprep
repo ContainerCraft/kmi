@@ -1,5 +1,3 @@
 update
-install curl,tmux,git,vim,net-tools,qemu-guest-agent,cloud-init,cloud-initramfs-growroot,screenfetch,xrdp,python3,gnome-tweaks,bridge-utils,ubuntu-desktop,build-essential
-run-command apt-get autoremove -y && apt-get purge -y
+install curl,tmux,git,vim,net-tools,qemu-guest-agent,cloud-init,cloud-initramfs-growroot
 run-command systemctl enable qemu-guest-agent
-run-command systemctl enable xrdp
