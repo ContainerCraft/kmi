@@ -11,12 +11,12 @@ archlinux::latest() {
 	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
 }
 
-ubuntu::22-04() {
-	local file="images/ubuntu-22.04/env.sh"
+ubuntu::24-04() {
+	local file="images/ubuntu-24.04/env.sh"
 	source "${file}"
 	local response=$(curl -s "${BASE_URL}"/SHA256SUMS)
-	local amd64_sha256sum=$(echo "${response}" | grep jammy-server-cloudimg-amd64-disk-kvm.img | awk -F ' ' '{print $1}')
-	local arm64_sha256sum=$(echo "${response}" | grep jammy-server-cloudimg-arm64.img | awk -F ' ' '{print $1}')
+	local amd64_sha256sum=$(echo "${response}" | grep noble-server-cloudimg-amd64.img | awk -F ' ' '{print $1}')
+	local arm64_sha256sum=$(echo "${response}" | grep noble-server-cloudimg-arm64.img | awk -F ' ' '{print $1}')
 	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
@@ -113,7 +113,7 @@ almalinux::10() {
 }
 
 archlinux::latest
-ubuntu::22-04
+ubuntu::24-04
 fedora::42
 debian::10
 debian::11
