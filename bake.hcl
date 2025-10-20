@@ -154,13 +154,13 @@ target "freebsd-13" {
   }
 }
 
-target "almalinux-8" {
+target "almalinux-10" {
   inherits = ["defaults"]
   tags = [
-    tag("almalinux", "8")
+    tag("almalinux", "10")
   ]
   args = {
-    FLAVOR = "almalinux-8"
+    FLAVOR = "almalinux-10"
   }
 }
 

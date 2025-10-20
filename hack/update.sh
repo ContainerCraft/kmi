@@ -102,11 +102,11 @@ rocky::8() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
-almalinux::8() {
-	local file="images/almalinux-8/env.sh"
-	local amd64_sha256sum=$(curl -s https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM \
+almalinux::10() {
+	local file="images/almalinux-10/env.sh"
+	local amd64_sha256sum=$(curl -s https://repo.almalinux.org/almalinux/10/cloud/x86_64_v2/images/CHECKSUM \
 		| grep GenericCloud-latest | awk -F' ' '{print $1}')
-	local arm64_sha256sum=$(curl -s https://repo.almalinux.org/almalinux/8/cloud/aarch64/images/CHECKSUM \
+	local arm64_sha256sum=$(curl -s https://repo.almalinux.org/almalinux/10/cloud/aarch64/images/CHECKSUM \
 		| grep GenericCloud-latest | awk -F' ' '{print $1}')
 	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
@@ -121,4 +121,4 @@ debian::13
 centos::8
 #centos::9
 rocky::8
-almalinux::8
+almalinux::10

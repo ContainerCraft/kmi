@@ -4,7 +4,7 @@ orbs:
 
 aliases:
   almalinux-flavors: &_almalinux-flavors
-    - almalinux-8
+    - almalinux-10
 
   archlinux-flavors: &_archlinux-flavors
     - archlinux-latest
