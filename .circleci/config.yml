@@ -29,7 +29,7 @@ aliases:
 
   opensuse-flavors: &_opensuse-flavors
     - opensuse-tumbleweed
-    - opensuse-leap-15
+    - opensuse-leap-16
 
   openwrt-flavors: &_openwrt-flavors
     - openwrt-21
@@ -235,11 +235,12 @@ workflows:
           matrix:
             parameters:
               flavor: *_opensuse-flavors
-              arch: [amd64]
+              arch: [amd64, arm64]
 
       - cradle:
           requires:
             - customize-<< matrix.flavor >>-amd64
+            - customize-<< matrix.flavor >>-arm64
           name: cradle-<< matrix.flavor >>
           matrix:
             parameters:

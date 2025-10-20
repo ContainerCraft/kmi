@@ -1,0 +1,9 @@
+VIRT_SYSPREP_OPERATIONS=logfiles,customize,bash-history,package-manager-cache
+_ARCH=$(echo ${ARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
+__LEAP_VERSION="16.0"
+BASE_URL=https://download.opensuse.org/distribution/leap/"${__LEAP_VERSION}"/appliances/
+AMD64_DOWNLOAD_FILE=Leap-"${__LEAP_VERSION}"-Minimal-VM.x86_64-kvm-and-xen.qcow2
+ARM64_DOWNLOAD_FILE=Leap-"${__LEAP_VERSION}"-Minimal-VM.aarch64-kvm.qcow2
+AMD64_SHA256SUM=8136775e19f2d9c59400eb5b7c0826afb73e59b3436fb2f0c8d283828b837d2b
+ARM64_SHA256SUM=afcf523297701c78888bcd57b3cf0053349fd46978f35f77a9d390ec473353e5
+SKIP=ssh

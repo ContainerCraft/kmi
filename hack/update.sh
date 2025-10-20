@@ -112,6 +112,16 @@ almalinux::10() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
+opensuse::leap-16() {
+	local file="images/opensuse-leap-16/env.sh"
+	local amd64_sha256sum=$(curl -s https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-kvm-and-xen.qcow2.sha256 \
+		| awk -F' ' '{print $1}')
+	local arm64_sha256sum=$(curl -s https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.aarch64-kvm.qcow2.sha256 \
+		| awk -F' ' '{print $1}')
+	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
+	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
+}
+
 archlinux::latest
 ubuntu::24-04
 fedora::42
@@ -122,3 +132,4 @@ centos::8
 #centos::9
 rocky::8
 almalinux::10
+opensuse::leap-16

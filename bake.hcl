@@ -90,14 +90,13 @@ target "debian-13" {
   }
 }
 
-target "opensuse-leap-15" {
+target "opensuse-leap-16" {
   inherits = ["defaults"]
-  platforms = ["linux/amd64"]
   tags = [
-    tag("opensuse", "leap-15")
+    tag("opensuse", "leap-16")
   ]
   args = {
-    FLAVOR = "opensuse-leap-15"
+    FLAVOR = "opensuse-leap-16"
   }
 }
 
