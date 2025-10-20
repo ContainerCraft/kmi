@@ -22,7 +22,7 @@ aliases:
     - fcos-35
 
   fedora-flavors: &_fedora-flavors
-    - fedora-37
+    - fedora-42
 
   freebsd-flavors: &_freebsd-flavors
     - freebsd-13
