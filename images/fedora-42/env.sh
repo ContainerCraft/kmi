@@ -1,4 +1,4 @@
-VIRT_SYSPREP_OPERATIONS=user-account,logfiles,customize,bash-history,net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
+VIRT_SYSPREP_OPERATIONS=user-account,logfiles,customize,bash-history,machine-id,yum-uuid,tmp-files,smolt-uuid,package-manager-cache
 _ARCH=$(echo ${ARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
 BASE_URL=https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/"${_ARCH}"/images
 DOWNLOAD_FILE=Fedora-Cloud-Base-Generic-42-1.1."${_ARCH}".qcow2

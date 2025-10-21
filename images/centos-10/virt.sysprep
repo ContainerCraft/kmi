@@ -1,0 +1,7 @@
+update
+edit /etc/selinux/config:s/^SELINUX=*/SELINUX=permissive/
+install git,vim,tmux,net-tools,qemu-guest-agent,epel-next-release
+run-command systemctl enable qemu-guest-agent
+run-command dnf clean all
+delete /var/cache/dnf
+selinux-relabel

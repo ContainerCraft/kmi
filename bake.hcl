@@ -59,26 +59,6 @@ target "archlinux-latest" {
   }
 }
 
-target "debian-10" {
-  inherits = ["defaults"]
-  tags = [
-    tag("debian", "10")
-  ]
-  args = {
-    FLAVOR = "debian-10"
-  }
-}
-
-target "debian-11" {
-  inherits = ["defaults"]
-  tags = [
-    tag("debian", "11")
-  ]
-  args = {
-    FLAVOR = "debian-11"
-  }
-}
-
 target "debian-13" {
   inherits = ["defaults"]
   tags = [
@@ -111,23 +91,13 @@ target "opensuse-tumbleweed" {
   }
 }
 
-target "centos-8" {
+target "centos-10" {
   inherits = ["defaults"]
   tags = [
-    tag("centos", "8")
+    tag("centos", "10")
   ]
   args = {
-    FLAVOR = "centos-8"
-  }
-}
-
-target "centos-9" {
-  inherits = ["defaults"]
-  tags = [
-    tag("centos", "9")
-  ]
-  args = {
-    FLAVOR = "centos-9"
+    FLAVOR = "centos-10"
   }
 }
 

@@ -10,12 +10,9 @@ aliases:
     - archlinux-latest
 
   centos-flavors: &_centos-flavors
-    - centos-8
-    - centos-9
+    - centos-10
 
   debian-flavors: &_debian-flavors
-    - debian-10
-    - debian-11
     - debian-13
 
   fcos-flavors: &_fcos-flavors
