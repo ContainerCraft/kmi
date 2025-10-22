@@ -1,7 +1,5 @@
-run-command dnf -y --best upgrade --exclude=kernel*
 edit /etc/selinux/config:\
     s/^SELINUX=*/SELINUX=permissive/
-install git-core,vim,tmux,net-tools,screenfetch,qemu-guest-agent,dnf-plugins-core,NetworkManager-tui
-run-command systemctl enable qemu-guest-agent
+install git-core,neovim,net-tools,qemu-guest-agent,dnf-plugins-core,NetworkManager-tui
+run-command systemctl enable --now qemu-guest-agent
 run-command dnf clean all
-delete /var/cache/dnf
