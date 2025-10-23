@@ -83,5 +83,5 @@ jobs:
       - name: Verify the image
         run: |
           cosign verify docker.io/containercraft/${FLAVOR//-/:} \
-            --certificate-identity-regexp='https://github.com/containercraft/kmi/.*' \
+            --certificate-identity-regexp='https://github.com/ContainerCraft/kmi/.*' \
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com
