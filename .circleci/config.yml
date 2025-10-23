@@ -40,7 +40,7 @@ aliases:
     - ubuntu-24-04
 
   vyos-flavors: &_vyos-flavors
-    - vyos-1-5
+    - vyos-rolling
 
   cache-key: &_cache-key
     key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}

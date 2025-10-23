@@ -156,14 +156,14 @@ target "openwrt-24" {
   }
 }
 
-target "vyos-1-5" {
+target "vyos-rolling" {
   inherits = ["defaults"]
   platforms = ["linux/amd64"]
   tags = [
-    tag("vyos", "1.5"),
-    tag("vyos", "stream"),
+    tag("vyos", "rolling"),
+    tag("vyos", "latest"),
   ]
   args = {
-    FLAVOR = "vyos-1-5"
+    FLAVOR = "vyos-rolling"
   }
 }

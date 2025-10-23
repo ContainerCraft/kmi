@@ -1,14 +1,14 @@
-# VyOS 1.5 Stream Build Configuration
+# VyOS Rolling Release Build Configuration
 # VyOS uses a custom build system rather than downloadable qcow2 images
 # https://docs.vyos.io/en/latest/contributing/build-vyos.html
 
 BUILD_METHOD=vyos-build
-VYOS_BRANCH=circinus
-VYOS_VERSION=1.5
+VYOS_BRANCH=current
+VYOS_VERSION=rolling
 BUILD_FLAVOR=kmi-qcow2
 
-# VyOS Stream releases are quarterly tech previews for the upcoming LTS
-# Rolling builds are also available from the 'current' branch
+# VyOS Rolling release contains the latest development code
+# Stream and LTS releases require subscription/authentication
 # Documentation: https://vyos.io/get/
 
 # This image requires building from source using the vyos-build container
