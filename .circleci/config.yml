@@ -39,6 +39,9 @@ aliases:
   ubuntu-flavors: &_ubuntu-flavors
     - ubuntu-24-04
 
+  vyos-flavors: &_vyos-flavors
+    - vyos-1-5
+
   cache-key: &_cache-key
     key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}
 
@@ -356,6 +359,31 @@ workflows:
             parameters:
               flavor: *_freebsd-flavors
       # End FreeBSD #
+
+      # Start VyOS #
+      - customize:
+          name: customize-<< matrix.flavor >>-<< matrix.arch >>
+          matrix:
+            parameters:
+              flavor: *_vyos-flavors
+              arch: [amd64]
+
+      - cradle:
+          requires:
+            - customize-<< matrix.flavor >>-amd64
+          name: cradle-<< matrix.flavor >>
+          matrix:
+            parameters:
+              flavor: *_vyos-flavors
+
+      - trigger-tests:
+          requires:
+            - cradle-<< matrix.flavor >>
+          name: trigger-<< matrix.flavor >>-promotion
+          matrix:
+            parameters:
+              flavor: *_vyos-flavors
+      # End VyOS #
 
 #################################################################################
 # Reuseable Jobs

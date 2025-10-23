@@ -157,6 +157,16 @@ freebsd::15() {
 	# ARM64 checksums not available for BETA2, skip for now
 }
 
+vyos::1-5() {
+	# VyOS builds from source using vyos-build container
+	# No checksums to update - images are built from git branches
+	# VyOS Stream releases are quarterly, manually update VYOS_BRANCH in env.sh if needed
+	# Current branch: circinus (1.5)
+	# See: https://vyos.io/get/ for latest releases
+	echo "VyOS builds from source - no automatic updates available"
+	echo "Check https://vyos.io/get/ for latest VyOS Stream releases"
+}
+
 archlinux::latest
 ubuntu::24-04
 fedora::42
@@ -172,3 +182,4 @@ opensuse::tumbleweed
 fcos::42
 openwrt::24
 freebsd::15
+vyos::1-5

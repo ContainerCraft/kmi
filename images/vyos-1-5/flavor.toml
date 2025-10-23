@@ -1,0 +1,15 @@
+# VyOS Build Flavor for KMI (KubeVirt Machine Image)
+# This flavor produces a qcow2 image optimized for KubeVirt/KVM
+
+# Output qcow2 format for QEMU/KVM
+image_format = "qcow2"
+
+# Include qemu-guest-agent for better VM integration
+packages = ["qemu-guest-agent"]
+
+# Boot settings for serial console support (useful for cloud/virtual environments)
+[boot_settings]
+  timeout = 5
+  console_type = "ttyS"
+  console_num = 0
+  console_speed = 115200

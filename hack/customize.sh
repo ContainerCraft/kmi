@@ -29,6 +29,40 @@ VIRT_SYSPREP_OPERATIONS=
 # shellcheck disable=SC1090
 source images/"${FLAVOR}"/env.sh
 
+# Handle VyOS build-from-source images differently
+if [[ "${BUILD_METHOD}" == "vyos-build" ]]; then
+	echo "Building VyOS image from source using vyos-build container..."
+
+	# Clone vyos-build repository if not already present
+	if [[ ! -d vyos-build ]]; then
+		git clone --depth 1 --branch "${VYOS_BRANCH}" https://github.com/vyos/vyos-build.git
+	fi
+
+	# Copy our custom flavor file
+	cp images/"${FLAVOR}"/flavor.toml vyos-build/data/build-flavors/"${BUILD_FLAVOR}".toml
+
+	# Build VyOS image using their container
+	cd vyos-build
+	docker run --rm --privileged \
+		-v "$(pwd)":/vyos \
+		-v /dev:/dev \
+		-w /vyos \
+		vyos/vyos-build:"${VYOS_BRANCH}" \
+		sudo ./build-vyos-image "${BUILD_FLAVOR}"
+
+	# Find the generated qcow2 file and move it to our expected location
+	VYOS_QCOW2=$(find build -name "*.qcow2" | head -n 1)
+	if [[ -n "${VYOS_QCOW2}" ]]; then
+		mv "${VYOS_QCOW2}" "../${QCOW2_FILE}"
+		cd ..
+		echo "VyOS build complete: ${QCOW2_FILE}"
+		exit 0
+	else
+		echo "Error: VyOS build failed - no qcow2 file found"
+		exit 1
+	fi
+fi
+
 SUMMER=sha256sum
 if [[ -z "${!SHASUM}" ]]; then
 	SHASUM="${ARCH^^}_SHA512SUM"

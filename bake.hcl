@@ -155,3 +155,15 @@ target "openwrt-24" {
     FLAVOR = "openwrt-24"
   }
 }
+
+target "vyos-1-5" {
+  inherits = ["defaults"]
+  platforms = ["linux/amd64"]
+  tags = [
+    tag("vyos", "1.5"),
+    tag("vyos", "stream"),
+  ]
+  args = {
+    FLAVOR = "vyos-1-5"
+  }
+}

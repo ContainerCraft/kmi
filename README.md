@@ -13,21 +13,21 @@ The CCIO kmi project aims to maintain all published distributions up to date wit
 | Flavor           | Stable | Proposed | Preview | Planned  | | x86_64 | arm64 |
 |:-----------------|:------:|:--------:|:-------:|:--------:|-|:------:|:-----:|
 | [AlmaLinux OS]   |        |          |    X    |          | |    X   |   X   |
-| [Alpine Linux]   |        |          |         |          | |        |       |
-| [Amazon Linux]   |        |          |    X    |          | |    X   |       |
-| [Arch Linux]     |        |          |         |          | |        |       |
+| [Alpine Linux]   |        |          |         |     X    | |        |       |
+| [Amazon Linux]   |        |          |         |     X    | |        |       |
+| [Arch Linux]     |        |          |    X    |          | |    X   |       |
 | [CentOS]         |        |     X    |         |          | |    X   |   X   |
-| [Debian]         |        |     X    |    X    |          | |    X   |   X   |
+| [Debian]         |        |     X    |         |          | |    X   |   X   |
 | [Fedora]         |        |     X    |         |          | |    X   |   X   |
 | [Fedora CoreOS]  |        |     X    |         |          | |    X   |   X   |
-| [FreeBSD]        |        |          |    X    |          | |    X   |       |
-| [Neutrino]       |        |          |         |          | |        |       |
+| [FreeBSD]        |        |          |    X    |          | |    X   |   X   |
+| [Neutrino]       |        |          |         |     X    | |        |       |
 | [NixOS]          |        |          |         |     X    | |        |       |
-| [OpenBSD]        |        |          |         |          | |        |       |
-| [OpenWRT]        |        |          |         |          | |        |       |
-| [OPNsense]       |        |          |         |          | |        |       |
-| [openSUSE]       |        |          |    X    |          | |    X   |       |
-| [PFSense]        |        |          |         |          | |        |       |
+| [OpenBSD]        |        |          |         |     X    | |        |       |
+| [OpenWRT]        |        |          |    X    |          | |    X   |   X   |
+| [OPNsense]       |        |          |         |     X    | |        |       |
+| [openSUSE]       |        |          |    X    |          | |    X   |   X   |
+| [PFSense]        |        |          |         |     X    | |        |       |
 | [Rocky Linux]    |        |          |    X    |          | |    X   |   X   |
 | [Ubuntu]         |        |     X    |         |          | |    X   |   X   |
 | [VyOS]           |        |          |    X    |          | |    X   |       |
