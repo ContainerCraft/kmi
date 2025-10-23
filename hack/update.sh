@@ -4,10 +4,8 @@ set -ex
 
 archlinux::latest() {
 	local file="images/archlinux-latest/env.sh"
-	source "${file}"
-	local response=$(curl -s "${BASE_URL}" | grep cloudimg | awk -F\" '{print $2}')
-	local image=$(echo ${response} | cut -d ' ' -f1)
-	local amd64_sha256sum=$(curl -s "${BASE_URL}${image}.SHA256" | awk -F ' ' '{print $1}')
+	local amd64_sha256sum=$(curl -Ls https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2.SHA256 \
+		| awk -F' ' '{print $1}')
 	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
 }
 

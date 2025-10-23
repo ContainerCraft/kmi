@@ -51,6 +51,7 @@ target "fedora-42" {
 
 target "archlinux-latest" {
   inherits = ["defaults"]
+  platforms = ["linux/amd64"]
   tags = [
     tag("archlinux", "latest")
   ]

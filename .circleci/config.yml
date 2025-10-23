@@ -48,28 +48,28 @@ workflows:
   build-and-publish-dev:
     jobs:
       # Start Arch Linux #
-#      - customize:
-#          name: customize-<< matrix.flavor >>-<< matrix.arch >>
-#          matrix:
-#            parameters:
-#              flavor: *_archlinux-flavors
-#              arch: [amd64]
-#
-#      - cradle:
-#          requires:
-#            - customize-<< matrix.flavor >>-amd64
-#          name: cradle-<< matrix.flavor >>
-#          matrix:
-#            parameters:
-#              flavor: *_archlinux-flavors
-#
-#      - trigger-tests:
-#          requires:
-#            - cradle-<< matrix.flavor >>
-#          name: trigger-<< matrix.flavor >>-promotion
-#          matrix:
-#            parameters:
-#              flavor: *_archlinux-flavors
+      - customize:
+          name: customize-<< matrix.flavor >>-<< matrix.arch >>
+          matrix:
+            parameters:
+              flavor: *_archlinux-flavors
+              arch: [amd64]
+
+      - cradle:
+          requires:
+            - customize-<< matrix.flavor >>-amd64
+          name: cradle-<< matrix.flavor >>
+          matrix:
+            parameters:
+              flavor: *_archlinux-flavors
+
+      - trigger-tests:
+          requires:
+            - cradle-<< matrix.flavor >>
+          name: trigger-<< matrix.flavor >>-promotion
+          matrix:
+            parameters:
+              flavor: *_archlinux-flavors
       # End ArchLinux #
 
       # Start Rocky #
