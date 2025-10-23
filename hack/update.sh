@@ -88,16 +88,12 @@ centos::9() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
-rocky::8() {
-	local file="images/rocky-8/env.sh"
-	source "${file}"
-	local response=$(curl -s ${BASE_URL}/CHECKSUM)
-	local amd64_build=$(echo "${response}" | grep x86_64 | awk -F' = ' '{print $1}' | awk -F'[()]' '{print $2}')
-	local arm64_build=$(echo "${response}" | grep aarch64 | awk -F' = ' '{print $1}' | awk -F'[()]' '{print $2}')
-	local amd64_sha256sum=$(echo "${response}" | grep x86_64 | awk -F' = ' '{print $2}')
-	local arm64_sha256sum=$(echo "${response}" | grep aarch64 | awk -F' = ' '{print $2}')
-	sed -i "s/AMD64_DOWNLOAD_FILE=.*/AMD64_DOWNLOAD_FILE=${amd64_build}/" "${file}"
-	sed -i "s/ARM64_DOWNLOAD_FILE=.*/ARM64_DOWNLOAD_FILE=${arm64_build}/" "${file}"
+rocky::10() {
+	local file="images/rocky-10/env.sh"
+	local amd64_sha256sum=$(curl -Ls https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base.latest.x86_64.qcow2.CHECKSUM \
+		| grep SHA256 | awk -F' = ' '{print $2}')
+	local arm64_sha256sum=$(curl -Ls https://download.rockylinux.org/pub/rocky/10/images/aarch64/Rocky-10-GenericCloud-Base.latest.aarch64.qcow2.CHECKSUM \
+		| grep SHA256 | awk -F' = ' '{print $2}')
 	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
@@ -163,7 +159,7 @@ debian::11
 debian::13
 centos::8
 #centos::9
-rocky::8
+rocky::10
 almalinux::10
 opensuse::leap-16
 opensuse::tumbleweed

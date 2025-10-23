@@ -32,7 +32,7 @@ aliases:
     - openwrt-24
 
   rocky-flavors: &_rocky-flavors
-    - rocky-8
+    - rocky-10
 
   ubuntu-flavors: &_ubuntu-flavors
     - ubuntu-24-04

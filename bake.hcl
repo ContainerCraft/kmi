@@ -132,13 +132,13 @@ target "almalinux-10" {
   }
 }
 
-target "rocky-8" {
+target "rocky-10" {
   inherits = ["defaults"]
   tags = [
-    tag("rocky", "8")
+    tag("rocky", "10")
   ]
   args = {
-    FLAVOR = "rocky-8"
+    FLAVOR = "rocky-10"
   }
 }
 
