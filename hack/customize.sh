@@ -85,6 +85,25 @@ if [[ -z "${BASE_URL}" ]]; then
 	BASE_URL="${!__BASE_URL}"
 fi
 
+# Auto-update checksums for rolling release distributions
+if [[ "${FLAVOR}" == "opensuse-tumbleweed" ]]; then
+	echo "Fetching current openSUSE Tumbleweed checksum (rolling release)..."
+	CURRENT_SHA256=$(curl -s "${BASE_URL}${DOWNLOAD_FILE}.sha256" | awk '{print $1}')
+	if [[ -n "${CURRENT_SHA256}" ]]; then
+		echo "Current checksum: ${CURRENT_SHA256}"
+		if [[ "${ARCH}" == "amd64" ]]; then
+			AMD64_SHA256SUM="${CURRENT_SHA256}"
+		elif [[ "${ARCH}" == "arm64" ]]; then
+			ARM64_SHA256SUM="${CURRENT_SHA256}"
+		fi
+		# Update the checksum variable that will be used for verification
+		SHASUM="${ARCH^^}_SHA256SUM"
+		eval "${SHASUM}='${CURRENT_SHA256}'"
+	else
+		echo "Warning: Could not fetch current checksum, using cached value from env.sh"
+	fi
+fi
+
 # Download qcow2 with retry logic for network resilience
 curl \
 	--fail \
