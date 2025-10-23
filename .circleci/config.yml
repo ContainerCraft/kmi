@@ -35,7 +35,7 @@ aliases:
     - rocky-8
 
   ubuntu-flavors: &_ubuntu-flavors
-    - ubuntu-24.04
+    - ubuntu-24-04
 
   cache-key: &_cache-key
     key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}

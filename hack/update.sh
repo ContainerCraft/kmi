@@ -12,7 +12,7 @@ archlinux::latest() {
 }
 
 ubuntu::24-04() {
-	local file="images/ubuntu-24.04/env.sh"
+	local file="images/ubuntu-24-04/env.sh"
 	source "${file}"
 	local response=$(curl -s "${BASE_URL}"/SHA256SUMS)
 	local amd64_sha256sum=$(echo "${response}" | grep noble-server-cloudimg-amd64.img | awk -F ' ' '{print $1}')

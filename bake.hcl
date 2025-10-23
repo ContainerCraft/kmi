@@ -35,7 +35,7 @@ target "ubuntu-24-04" {
     tag("ubuntu", "24.04"),
   ]
   args = {
-    FLAVOR = "ubuntu-24.04"
+    FLAVOR = "ubuntu-24-04"
   }
 }
 
