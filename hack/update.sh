@@ -122,6 +122,19 @@ opensuse::leap-16() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
+fcos::42() {
+	local file="images/fcos-42/env.sh"
+	local latest_build=$(curl -s https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/builds.json \
+		| jq -r '.builds[] | select(.id | startswith("42.")) | .id' | head -n 1)
+	local amd64_sha256sum=$(curl -s https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/${latest_build}/x86_64/meta.json \
+		| jq -r '.images.qemu.sha256')
+	local arm64_sha256sum=$(curl -s https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/${latest_build}/aarch64/meta.json \
+		| jq -r '.images.qemu.sha256')
+	sed -i "s/_BUILD_VERSION=.*/_BUILD_VERSION=\"${latest_build}\"/" "${file}"
+	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
+	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
+}
+
 archlinux::latest
 ubuntu::24-04
 fedora::42
@@ -133,3 +146,4 @@ centos::8
 rocky::8
 almalinux::10
 opensuse::leap-16
+fcos::42

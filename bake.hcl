@@ -101,13 +101,13 @@ target "centos-10" {
   }
 }
 
-target "fcos-35" {
+target "fcos-42" {
   inherits = ["defaults"]
   tags = [
-    tag("fcos", "35")
+    tag("fcos", "42")
   ]
   args = {
-    FLAVOR = "fcos-35"
+    FLAVOR = "fcos-42"
   }
 }
 

@@ -33,7 +33,7 @@ spec:
   volumes:
     - name: containerdisk
       containerDisk:
-        image: docker.io/containercraft/fcos:35-dev
+        image: docker.io/containercraft/fcos:42-dev
         imagePullPolicy: Always
     - name: cloudinitdisk
       cloudInitConfigDrive:

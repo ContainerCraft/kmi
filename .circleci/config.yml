@@ -16,7 +16,7 @@ aliases:
     - debian-13
 
   fcos-flavors: &_fcos-flavors
-    - fcos-35
+    - fcos-42
 
   fedora-flavors: &_fedora-flavors
     - fedora-42
