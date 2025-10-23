@@ -1,4 +1,4 @@
-VIRT_SYSPREP_OPERATIONS=logfiles,customize,bash-history,package-manager-cache
+VIRT_SYSPREP_OPERATIONS=logfiles,bash-history,package-manager-cache
 _ARCH=$(echo ${ARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
 __LEAP_VERSION="16.0"
 BASE_URL=https://download.opensuse.org/distribution/leap/"${__LEAP_VERSION}"/appliances/
