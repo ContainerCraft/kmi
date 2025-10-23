@@ -81,4 +81,7 @@ jobs:
         run: cosign sign --recursive docker.io/containercraft/${FLAVOR//-/:}
 
       - name: Verify the image
-        run: cosign verify docker.io/containercraft/${FLAVOR//-/:}
+        run: |
+          cosign verify docker.io/containercraft/${FLAVOR//-/:} \
+            --certificate-identity-regexp='https://github.com/containercraft/kmi/.*' \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com
