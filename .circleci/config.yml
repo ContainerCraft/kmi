@@ -22,7 +22,7 @@ aliases:
     - fedora-42
 
   freebsd-flavors: &_freebsd-flavors
-    - freebsd-13
+    - freebsd-15
 
   opensuse-tumbleweed-flavors: &_opensuse-tumbleweed-flavors
     - opensuse-tumbleweed
@@ -337,11 +337,12 @@ workflows:
           matrix:
             parameters:
               flavor: *_freebsd-flavors
-              arch: [amd64]
+              arch: [amd64, arm64]
 
       - cradle:
           requires:
             - customize-<< matrix.flavor >>-amd64
+            - customize-<< matrix.flavor >>-arm64
           name: cradle-<< matrix.flavor >>
           matrix:
             parameters:

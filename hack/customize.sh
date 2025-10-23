@@ -52,10 +52,14 @@ curl \
 	--output "${DOWNLOAD_FILE}" \
 	--location "${BASE_URL}"/"${DOWNLOAD_FILE}"
 
-# Verify Checksum
-echo "${!SHASUM} ${DOWNLOAD_FILE}" |
-	${SUMMER} --check --status ||
-	(echo "Invalid checksum: ${SUMMER} check failed" && exit 1)
+# Verify Checksum (skip if checksum not provided, e.g. for beta releases)
+if [[ -n "${!SHASUM}" ]]; then
+	echo "${!SHASUM} ${DOWNLOAD_FILE}" |
+		${SUMMER} --check --status ||
+		(echo "Invalid checksum: ${SUMMER} check failed" && exit 1)
+else
+	echo "Warning: Checksum validation skipped (no checksum provided for ${ARCH})"
+fi
 
 # Unarchive image
 if [[ "${DOWNLOAD_FILE}" =~ \.gz$ ]]; then

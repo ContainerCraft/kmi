@@ -111,14 +111,15 @@ target "fcos-42" {
   }
 }
 
-target "freebsd-13" {
+target "freebsd-15" {
   inherits = ["defaults"]
-  platforms = ["linux/amd64"]
+  platforms = ["linux/arm64", "linux/amd64"]
   tags = [
-    tag("freebsd", "13")
+    tag("freebsd", "15"),
+    tag("freebsd", "15-beta2")
   ]
   args = {
-    FLAVOR = "freebsd-13"
+    FLAVOR = "freebsd-15"
   }
 }
 

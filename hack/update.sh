@@ -151,6 +151,14 @@ openwrt::24() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
+freebsd::15() {
+	local file="images/freebsd-15/env.sh"
+	local amd64_sha256sum=$(curl -Ls https://download.freebsd.org/releases/VM-IMAGES/15.0-BETA2/amd64/Latest/CHECKSUM.SHA256 \
+		| grep 'FreeBSD-15.0-BETA2-amd64-zfs.qcow2.xz' | awk -F' = ' '{print $2}')
+	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
+	# ARM64 checksums not available for BETA2, skip for now
+}
+
 archlinux::latest
 ubuntu::24-04
 fedora::42
@@ -165,3 +173,4 @@ opensuse::leap-16
 opensuse::tumbleweed
 fcos::42
 openwrt::24
+freebsd::15
