@@ -122,6 +122,13 @@ opensuse::leap-16() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
+opensuse::tumbleweed() {
+	local file="images/opensuse-tumbleweed/env.sh"
+	local amd64_sha256sum=$(curl -s https://download.opensuse.org/tumbleweed/appliances/openSUSE-Tumbleweed-Minimal-VM.x86_64-kvm-and-xen.qcow2.sha256 \
+		| awk -F' ' '{print $1}')
+	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
+}
+
 fcos::42() {
 	local file="images/fcos-42/env.sh"
 	local latest_build=$(curl -s https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/builds.json \
@@ -159,5 +166,6 @@ centos::8
 rocky::8
 almalinux::10
 opensuse::leap-16
+opensuse::tumbleweed
 fcos::42
 openwrt::24
