@@ -144,7 +144,7 @@ target "rocky-8" {
 
 target "openwrt-24" {
   inherits = ["defaults"]
-  platforms = ["linux/amd64"]
+  platforms = ["linux/arm64", "linux/amd64"]
   tags = [
     tag("openwrt", "24"),
     tag("openwrt", "latest"),

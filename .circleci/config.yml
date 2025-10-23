@@ -258,11 +258,12 @@ workflows:
           matrix:
             parameters:
               flavor: *_openwrt-flavors
-              arch: [amd64]
+              arch: [amd64, arm64]
 
       - cradle:
           requires:
             - customize-<< matrix.flavor >>-amd64
+            - customize-<< matrix.flavor >>-arm64
           name: cradle-<< matrix.flavor >>
           matrix:
             parameters:
