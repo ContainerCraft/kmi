@@ -51,14 +51,20 @@ if [[ "${BUILD_METHOD}" == "vyos-build" ]]; then
 		sudo ./build-vyos-image "${BUILD_FLAVOR}"
 
 	# Find the generated qcow2 file and move it to our expected location
-	VYOS_QCOW2=$(find build -name "*.qcow2" | head -n 1)
+	VYOS_QCOW2=$(find build -name "*.qcow2" 2>/dev/null | head -n 1)
 	if [[ -n "${VYOS_QCOW2}" ]]; then
-		mv "${VYOS_QCOW2}" "../${QCOW2_FILE}"
+		# Use sudo to move file created by Docker container running as root
+		sudo mv "${VYOS_QCOW2}" "../${QCOW2_FILE}"
+		sudo chown "${USER}":"${USER}" "../${QCOW2_FILE}"
 		cd ..
 		echo "VyOS build complete: ${QCOW2_FILE}"
+
+		# Clean up vyos-build directory to save space
+		sudo rm -rf vyos-build
 		exit 0
 	else
 		echo "Error: VyOS build failed - no qcow2 file found"
+		cd ..
 		exit 1
 	fi
 fi
