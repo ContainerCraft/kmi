@@ -85,10 +85,14 @@ if [[ -z "${BASE_URL}" ]]; then
 	BASE_URL="${!__BASE_URL}"
 fi
 
-# Download qcow2
+# Download qcow2 with retry logic for network resilience
 curl \
 	--fail \
 	--verbose \
+	--retry 3 \
+	--retry-delay 10 \
+	--retry-max-time 300 \
+	--connect-timeout 60 \
 	--output "${DOWNLOAD_FILE}" \
 	--location "${BASE_URL}"/"${DOWNLOAD_FILE}"
 
