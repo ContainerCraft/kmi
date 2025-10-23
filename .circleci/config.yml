@@ -24,8 +24,10 @@ aliases:
   freebsd-flavors: &_freebsd-flavors
     - freebsd-13
 
-  opensuse-flavors: &_opensuse-flavors
+  opensuse-tumbleweed-flavors: &_opensuse-tumbleweed-flavors
     - opensuse-tumbleweed
+
+  opensuse-leap-flavors: &_opensuse-leap-flavors
     - opensuse-leap-16
 
   openwrt-flavors: &_openwrt-flavors
@@ -226,12 +228,37 @@ workflows:
               flavor: *_debian-flavors
       # End Debian #
 
-      # Start openSUSE #
+      # Start openSUSE Tumbleweed #
       - customize:
           name: customize-<< matrix.flavor >>-<< matrix.arch >>
           matrix:
             parameters:
-              flavor: *_opensuse-flavors
+              flavor: *_opensuse-tumbleweed-flavors
+              arch: [amd64]
+
+      - cradle:
+          requires:
+            - customize-<< matrix.flavor >>-amd64
+          name: cradle-<< matrix.flavor >>
+          matrix:
+            parameters:
+              flavor: *_opensuse-tumbleweed-flavors
+
+      - trigger-tests:
+          requires:
+            - cradle-<< matrix.flavor >>
+          name: trigger-<< matrix.flavor >>-promotion
+          matrix:
+            parameters:
+              flavor: *_opensuse-tumbleweed-flavors
+      # End openSUSE Tumbleweed #
+
+      # Start openSUSE Leap #
+      - customize:
+          name: customize-<< matrix.flavor >>-<< matrix.arch >>
+          matrix:
+            parameters:
+              flavor: *_opensuse-leap-flavors
               arch: [amd64, arm64]
 
       - cradle:
@@ -241,7 +268,7 @@ workflows:
           name: cradle-<< matrix.flavor >>
           matrix:
             parameters:
-              flavor: *_opensuse-flavors
+              flavor: *_opensuse-leap-flavors
 
       - trigger-tests:
           requires:
@@ -249,8 +276,8 @@ workflows:
           name: trigger-<< matrix.flavor >>-promotion
           matrix:
             parameters:
-              flavor: *_opensuse-flavors
-      # End openSUSE #
+              flavor: *_opensuse-leap-flavors
+      # End openSUSE Leap #
 
       # Start OpenWrt #
       - customize:
