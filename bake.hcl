@@ -142,14 +142,14 @@ target "rocky-8" {
   }
 }
 
-target "openwrt-21" {
+target "openwrt-24" {
   inherits = ["defaults"]
   platforms = ["linux/amd64"]
   tags = [
-    tag("openwrt", "21"),
+    tag("openwrt", "24"),
     tag("openwrt", "latest"),
   ]
   args = {
-    FLAVOR = "openwrt-21"
+    FLAVOR = "openwrt-24"
   }
 }

@@ -135,6 +135,16 @@ fcos::42() {
 	sed -i "s/ARM64_SHA256SUM=.*/ARM64_SHA256SUM=${arm64_sha256sum}/" "${file}"
 }
 
+openwrt::24() {
+	local file="images/openwrt-24/env.sh"
+	local latest_version=$(curl -s https://downloads.openwrt.org/releases/ \
+		| grep -oP 'href="24\.[0-9]+\.[0-9]+/"' | sed 's/href="//;s/\///' | sort -V | tail -n 1)
+	local amd64_sha256sum=$(curl -s https://downloads.openwrt.org/releases/${latest_version}/targets/x86/64/sha256sums \
+		| grep generic-squashfs-combined-efi.img.gz | awk '{print $1}')
+	sed -i "s/__VERSION=.*/__VERSION=\"${latest_version}\"/" "${file}"
+	sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
+}
+
 archlinux::latest
 ubuntu::24-04
 fedora::42
@@ -147,3 +157,4 @@ rocky::8
 almalinux::10
 opensuse::leap-16
 fcos::42
+openwrt::24
