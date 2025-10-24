@@ -74,11 +74,11 @@ jobs:
       - name: Copy the manifest to product tag
         run: |
           skopeo copy --all \
-            docker://docker.io/containercraft/${FLAVOR//-/:}-dev \
-            docker://docker.io/containercraft/${FLAVOR//-/:}
+            docker://docker.io/containercraft/${FLAVOR/-/:}-dev \
+            docker://docker.io/containercraft/${FLAVOR/-/:}
 
       - name: Sign the image
-        run: cosign sign --recursive docker.io/containercraft/${FLAVOR//-/:}
+        run: cosign sign --recursive docker.io/containercraft/${FLAVOR/-/:}
 
       - name: Wait for signature propagation
         run: sleep 5
@@ -87,7 +87,7 @@ jobs:
         run: |
           # Retry verification up to 3 times with 10 second delays to handle registry propagation
           for i in {1..3}; do
-            if cosign verify docker.io/containercraft/${FLAVOR//-/:} \
+            if cosign verify docker.io/containercraft/${FLAVOR/-/:} \
               --certificate-identity-regexp='https://github.com/ContainerCraft/kmi/.*' \
               --certificate-oidc-issuer=https://token.actions.githubusercontent.com; then
               echo "Verification succeeded on attempt $i"
