@@ -24,6 +24,7 @@ BASE_URL=
 DOWNLOAD_FILE=
 SHASUM="${ARCH^^}_SHA256SUM"
 CUSTOMIZE=true
+SPARSIFY=true
 VIRT_SYSPREP_OPERATIONS=
 
 # shellcheck disable=SC1090
@@ -148,11 +149,15 @@ if [[ "${CUSTOMIZE}" == "true" ]]; then
 	# Grow disk size
 	qemu-img resize "${QCOW2_TMPFILE}" +20G
 
-	# Pre-Sparsify
-	sudo virt-sparsify \
-		--verbose \
-		--inplace \
-		"${QCOW2_TMPFILE}"
+	# Pre-Sparsify (optional - can be disabled per flavor)
+	if [[ "${SPARSIFY}" == "true" ]]; then
+		sudo virt-sparsify \
+			--verbose \
+			--inplace \
+			"${QCOW2_TMPFILE}"
+	else
+		echo "Skipping pre-sparsify (SPARSIFY=false)"
+	fi
 
 	# Customize Disk Image
 	sudo virt-sysprep \
@@ -165,12 +170,17 @@ if [[ "${CUSTOMIZE}" == "true" ]]; then
 	# Log disk image info
 	qemu-img info "${QCOW2_TMPFILE}"
 
-	# Post-Sparsify
-	sudo virt-sparsify \
-		--verbose \
-		--compress \
-		"${QCOW2_TMPFILE}" \
-		"${QCOW2_FILE}"
+	# Post-Sparsify (optional - can be disabled per flavor)
+	if [[ "${SPARSIFY}" == "true" ]]; then
+		sudo virt-sparsify \
+			--verbose \
+			--compress \
+			"${QCOW2_TMPFILE}" \
+			"${QCOW2_FILE}"
+	else
+		echo "Skipping post-sparsify (SPARSIFY=false)"
+		mv "${QCOW2_TMPFILE}" "${QCOW2_FILE}"
+	fi
 else
 	mv "${QCOW2_TMPFILE}" "${QCOW2_FILE}"
 fi
