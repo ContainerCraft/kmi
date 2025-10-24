@@ -18,3 +18,6 @@ ARM64_DOWNLOAD_FILE="metal-arm64.qcow2"
 # Talos is immutable - skip customization, sparsify, and virt-sysprep
 CUSTOMIZE=false
 SPARSIFY=false
+
+# Skip SSH test - Talos doesn't have SSH server by default (uses talosctl/gRPC API)
+SKIP=ssh
