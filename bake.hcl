@@ -167,3 +167,16 @@ target "vyos-rolling" {
     FLAVOR = "vyos-rolling"
   }
 }
+
+target "talos-1-11" {
+  inherits = ["defaults"]
+  platforms = ["linux/arm64", "linux/amd64"]
+  tags = [
+    tag("talos", "1.11"),
+    tag("talos", "1.11.3"),
+    tag("talos", "latest"),
+  ]
+  args = {
+    FLAVOR = "talos-1-11"
+  }
+}

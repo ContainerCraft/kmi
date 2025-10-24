@@ -42,6 +42,9 @@ aliases:
   vyos-flavors: &_vyos-flavors
     - vyos-rolling
 
+  talos-flavors: &_talos-flavors
+    - talos-1-11
+
   cache-key: &_cache-key
     key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}
 
@@ -384,6 +387,32 @@ workflows:
             parameters:
               flavor: *_vyos-flavors
       # End VyOS #
+
+      # Start Talos #
+      - customize:
+          name: customize-<< matrix.flavor >>-<< matrix.arch >>
+          matrix:
+            parameters:
+              flavor: *_talos-flavors
+              arch: [amd64, arm64]
+
+      - cradle:
+          requires:
+            - customize-<< matrix.flavor >>-amd64
+            - customize-<< matrix.flavor >>-arm64
+          name: cradle-<< matrix.flavor >>
+          matrix:
+            parameters:
+              flavor: *_talos-flavors
+
+      - trigger-tests:
+          requires:
+            - cradle-<< matrix.flavor >>
+          name: trigger-<< matrix.flavor >>-promotion
+          matrix:
+            parameters:
+              flavor: *_talos-flavors
+      # End Talos #
 
 #################################################################################
 # Reuseable Jobs

@@ -1,0 +1,2 @@
+# Talos Linux is immutable - no customization needed
+# CUSTOMIZE=false in env.sh skips virt-sysprep entirely
