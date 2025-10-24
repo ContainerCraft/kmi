@@ -32,7 +32,7 @@ function "tag" {
 target "ubuntu-24-04" {
   inherits = ["defaults"]
   tags = [
-    tag("ubuntu", "24.04"),
+    tag("ubuntu", "24-04"),
   ]
   args = {
     FLAVOR = "ubuntu-24-04"
@@ -172,8 +172,8 @@ target "talos-1-11" {
   inherits = ["defaults"]
   platforms = ["linux/arm64", "linux/amd64"]
   tags = [
-    tag("talos", "1.11"),
-    tag("talos", "1.11.3"),
+    tag("talos", "1-11"),
+    tag("talos", "1-11-3"),
     tag("talos", "latest"),
   ]
   args = {
