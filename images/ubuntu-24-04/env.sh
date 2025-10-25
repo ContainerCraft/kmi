@@ -1,6 +1,6 @@
-# Preserve user-account for flexibility, enable customize for package installation
+# Enable customize for package installation and service enablement
 # customize operation REQUIRED to install packages and enable services
-VIRT_SYSPREP_OPERATIONS=user-account,logfiles,bash-history,tmp-files,customize
+VIRT_SYSPREP_OPERATIONS=logfiles,bash-history,tmp-files,customize
 BASE_URL=https://cloud-images.ubuntu.com/noble/current
 AMD64_DOWNLOAD_FILE=noble-server-cloudimg-amd64.img
 ARM64_DOWNLOAD_FILE=noble-server-cloudimg-arm64.img
