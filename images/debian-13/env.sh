@@ -1,6 +1,7 @@
 # Preserve user-account for flexibility, enable customize for package installation
 # customize operation REQUIRED to install packages and enable services
-VIRT_SYSPREP_OPERATIONS=user-account,logfiles,bash-history,machine-id,tmp-files,customize
+# machine-id removed to avoid conflicts with resolv.conf creation
+VIRT_SYSPREP_OPERATIONS=user-account,logfiles,bash-history,tmp-files,customize
 # Using cdimage.debian.org instead of cloud.debian.org subdomain for better CircleCI connectivity
 BASE_URL=https://cdimage.debian.org/images/cloud/trixie/latest/
 DOWNLOAD_FILE=debian-13-generic-${ARCH}.qcow2

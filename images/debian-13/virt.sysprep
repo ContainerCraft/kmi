@@ -1,7 +1,6 @@
 # Create resolv.conf FIRST to enable DNS resolution for package installation
 # This is required because libguestfs appliance may not have valid DNS config
-write /etc/resolv.conf:nameserver 1.1.1.1
-append-line /etc/resolv.conf:nameserver 8.8.8.8
+run-command printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
 
 update
 install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,net-tools,curl,btop
