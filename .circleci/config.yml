@@ -705,7 +705,7 @@ executors:
       image: ubuntu-2204:2025.09.1
     environment:
       DOCKER_CLI_EXPERIMENTAL: enabled
-    resource_class: arm.large # 4 vCPUs, 16GB RAM
+    resource_class: arm.xlarge # 8 vCPUs, 32GB RAM
 
   # AMD64 Runner
   amd64:
@@ -714,4 +714,4 @@ executors:
       image: ubuntu-2204:2025.09.1
     environment:
       DOCKER_CLI_EXPERIMENTAL: enabled
-    resource_class: large # 4 vCPUs, 15GB RAM
+    resource_class: xlarge # 8 vCPUs, 32GB RAM
