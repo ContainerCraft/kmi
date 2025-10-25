@@ -1,0 +1,226 @@
+---
+# Kali Linux 2025.3 Penetration Testing Workstation with XRDP
+# Uses containerDisk from docker.io/containercraft/kali:latest
+# Pre-configured with Kali's default desktop environment
+# Network: enp1s0 bridged to br0 with DHCP
+#
+# Quick Deployment (Recommended):
+# ================================
+# Use the deployment script to handle secrets and VM creation:
+#
+#   ./examples/kali/deploy.sh
+#
+# Or with custom SSH key and userdata files:
+#
+#   ./examples/kali/deploy.sh \
+#     --ssh-key ~/.ssh/my_custom_key.pub \
+#     --userdata ./my-custom-userdata.yaml \
+#     --vm-manifest ./my-custom-vm.yaml
+#
+# Manual Deployment:
+# ==================
+#
+# 1. Create SSH public key secret for kali user:
+#    kubectl create secret generic kargo-sshpubkey-kali \
+#      --from-file=key1=$HOME/.ssh/id_ed25519.pub \
+#      --namespace=default
+#
+# 2. Create cloud-init userdata secret:
+#    kubectl create secret generic kali-linux-userdata \
+#      --from-file=userdata=examples/kali/kali-linux-userdata.yaml \
+#      --namespace=default
+#
+# 3. Verify network attachment definition exists:
+#    kubectl get net-attach-def br0-network-attachment
+#
+# 4. Deploy the VirtualMachine:
+#    kubectl apply -f examples/kali/kali-linux-vdi-xrdp-gnome-br0-containerdisk.yaml
+#
+# 5. Monitor VM startup:
+#    kubectl get vm,vmi,dv,pvc
+#    kubectl get vmi kali-linux-xrdp -o yaml
+#
+# 6. Watch cloud-init progress (once VM is running):
+#    virtctl console kali-linux-xrdp
+#    # Or check logs inside VM: tail -f /var/log/cloud-init-output.log
+#
+# 7. Get VM IP address:
+#    kubectl get vmi kali-linux-xrdp -o jsonpath='{.status.interfaces[0].ipAddress}'
+#
+# 8. Connect via SSH:
+#    ssh kali@<VM_IP>
+#
+# 9. Connect via RDP:
+#    xfreerdp /v:<VM_IP>:3389 /u:kali /p:kali /cert:ignore
+#    # Or use any RDP client: rdesktop, remmina, Microsoft Remote Desktop, etc.
+#
+# Cleanup:
+# ========
+# kubectl delete vm kali-linux-xrdp
+# kubectl delete pvc kali-linux-volume-vda-root
+# kubectl delete dv kali-linux-volume-vda-root
+# kubectl delete secret kali-linux-userdata
+# kubectl delete secret kargo-sshpubkey-kali
+#
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: kali-linux-xrdp
+  namespace: default
+  labels:
+    app: kali-linux-xrdp
+    os: kali
+    version: "2025.3"
+    role: pentest-workstation
+  annotations:
+    description: "Kali Linux 2025.3 Penetration Testing Workstation with XRDP"
+spec:
+  # Automatically start the VM
+  runStrategy: Always
+
+  # DataVolume for persistent root disk
+  dataVolumeTemplates:
+    - metadata:
+        name: kali-linux-volume-vda-root
+      spec:
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 128Gi
+          storageClassName: hostpath-provisioner
+        source:
+          registry:
+            url: docker://docker.io/containercraft/kali:latest-dev
+
+  template:
+    metadata:
+      labels:
+        app: kali-linux-xrdp
+        os: kali
+        version: "2025.3"
+        role: pentest-workstation
+      annotations:
+        vm.kubevirt.io/os: "linux"
+    spec:
+      # Enable SSH key injection via qemu-guest-agent
+      accessCredentials:
+        - sshPublicKey:
+            propagationMethod:
+              qemuGuestAgent:
+                users:
+                  - kali
+            source:
+              secret:
+                secretName: kargo-sshpubkey-kali
+
+      hostname: kali-linux-xrdp
+      terminationGracePeriodSeconds: 30
+
+      domain:
+        # Machine type for modern features and compatibility
+        machine:
+          type: q35
+
+        # Firmware configuration
+        firmware:
+          uuid: b9d3e7f8-2345-6789-0bcd-ef1234567890
+          serial: kali-linux-xrdp-001
+          bootloader:
+            bios: {}
+
+        # CPU configuration: 4 cores, host-passthrough for best performance
+        cpu:
+          cores: 4
+          sockets: 1
+          threads: 1
+          model: host-passthrough
+          dedicatedCpuPlacement: false
+
+        # Clock and timer configuration
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+
+        # Memory configuration: 16GB (recommended for pentest workloads)
+        resources:
+          requests:
+            memory: 16Gi
+            devices.kubevirt.io/kvm: "1"
+          limits:
+            memory: 16Gi
+
+        # Features for modern OS support
+        features:
+          acpi: {}
+          apic: {}
+          smm:
+            enabled: true
+
+        # Device configuration
+        devices:
+          autoattachPodInterface: false
+          autoattachSerialConsole: true
+          autoattachGraphicsDevice: true
+          networkInterfaceMultiqueue: true
+          rng: {}
+
+          # Disk configuration
+          disks:
+            - name: root-disk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+
+          # Network interface with stable MAC address
+          interfaces:
+            - name: enp1s0
+              bridge: {}
+              model: virtio
+              macAddress: "52:54:00:0c:00:25"
+
+          # USB tablet for better pointer handling
+          inputs:
+            - type: tablet
+              bus: usb
+              name: tablet
+
+      # Network configuration
+      networks:
+        - name: enp1s0
+          multus:
+            networkName: br0-network-attachment
+
+      # Volume configuration
+      volumes:
+        - name: root-disk
+          dataVolume:
+            name: kali-linux-volume-vda-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            networkData: |
+              version: 2
+              renderer: networkd
+              ethernets:
+                enp1s0:
+                  dhcp4: false
+                  dhcp6: false
+              bridges:
+                br0:
+                  interfaces: [enp1s0]
+                  dhcp4: true
+                  dhcp6: true
+                  dhcp-identifier: mac
+            secretRef:
+              name: kali-linux-userdata

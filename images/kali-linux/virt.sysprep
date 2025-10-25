@@ -1,4 +1,8 @@
+# Preserve the default kali:kali user account
+# Only clean logs and temporary files, do NOT remove user accounts
+# This allows both the built-in kali user and cloud-init to coexist
+
 update
-install python3,tmux,git,vim,cloud-init,cloud-initramfs-growroot,qemu-guest-agent
+install python3,tmux,git,vim,cloud-init,qemu-guest-agent
 run-command systemctl enable qemu-guest-agent
 run-command apt-get autoremove -y && apt-get clean

@@ -1,0 +1,226 @@
+#cloud-config
+hostname: kali
+fqdn: kali.home.arpa
+ssh_pwauth: true
+disable_root: false
+
+# User configuration
+chpasswd:
+  list: |
+    root:kali
+    kali:kali
+  expire: False
+
+users:
+  - default
+  - name: kali
+    gecos: Kali Linux User
+    shell: /bin/bash
+    lock_passwd: false
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: adm,cdrom,dip,plugdev,sudo,docker,kvm,xrdp,ssl-cert,audio,video,wireshark
+    ssh_import_id:
+      - gh:usrbinkat
+
+# Disk expansion
+growpart:
+  mode: auto
+  devices: ["/"]
+  ignore_growroot_disabled: true
+
+# System configuration
+timezone: UTC
+
+# Polkit rules for passwordless VDI operations
+write_files:
+  - path: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
+    content: |
+      [Allow Colord all Users]
+      Identity=unix-user:*
+      Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/46-allow-update-repo.pkla
+    content: |
+      [Allow Package Management all Users]
+      Identity=unix-user:*
+      Action=org.debian.apt.*;org.freedesktop.packagekit.*
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/47-allow-networkmanager.pkla
+    content: |
+      [Allow NetworkManager all Users]
+      Identity=unix-user:*
+      Action=org.freedesktop.NetworkManager.*
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/49-nopasswd-shutdown.pkla
+    content: |
+      [Allow shutdown/reboot without password]
+      Identity=unix-user:*
+      Action=org.freedesktop.login1.power-off;org.freedesktop.login1.power-off-multiple-sessions;org.freedesktop.login1.reboot;org.freedesktop.login1.reboot-multiple-sessions
+      ResultAny=yes
+      ResultInactive=yes
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+# Package management
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+
+# Additional packages to install (beyond Kali's defaults)
+packages:
+  # Remote desktop (Kali comes with desktop pre-installed)
+  - xrdp
+  - xorgxrdp
+
+  # Container tools
+  - docker.io
+  - docker-compose
+
+  # Additional utilities
+  - vim
+  - git
+  - tmux
+  - htop
+  - btop
+  - lnav
+  - jq
+
+# Commands to run after package installation
+runcmd:
+  # Create user directories
+  - mkdir -p /home/kali/.ssh
+  - mkdir -p /home/kali/.kube
+  - mkdir -p /home/kali/.config
+  - chown -R kali:kali /home/kali
+  - chmod 700 /home/kali/.ssh
+
+  # Import SSH keys from GitHub
+  - curl -fsSL https://github.com/usrbinkat.keys >> /home/kali/.ssh/authorized_keys
+  - chmod 600 /home/kali/.ssh/authorized_keys
+  - chown kali:kali /home/kali/.ssh/authorized_keys
+
+  # Configure QEMU guest agent
+  - systemctl enable --now qemu-guest-agent
+  - sleep 6
+  - systemctl restart qemu-guest-agent
+
+  # Configure Docker
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker kali
+
+  # Configure XRDP for Kali's desktop environment
+  - systemctl enable xrdp
+  - systemctl enable xrdp-sesman
+  - echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
+
+  # Add kali to xrdp ssl-cert group
+  - adduser xrdp ssl-cert
+  - usermod -aG ssl-cert kali
+
+  # Configure XRDP session for Kali's desktop
+  - |
+    cat > /etc/xrdp/startwm.sh <<'EOF'
+    #!/bin/sh
+    if [ -r /etc/default/locale ]; then
+      . /etc/default/locale
+      export LANG LANGUAGE
+    fi
+
+    # Start Kali's default desktop session
+    if [ -x /usr/bin/startxfce4 ]; then
+      exec /usr/bin/startxfce4
+    elif [ -x /usr/bin/gnome-session ]; then
+      exec /usr/bin/gnome-session
+    elif [ -x /usr/bin/startplasma-x11 ]; then
+      exec /usr/bin/startplasma-x11
+    else
+      exec /usr/bin/xterm
+    fi
+    EOF
+  - chmod +x /etc/xrdp/startwm.sh
+
+  # Configure user session preferences
+  - |
+    cat > /home/kali/.xsession <<'EOF'
+    #!/bin/sh
+    if [ -x /usr/bin/startxfce4 ]; then
+      exec /usr/bin/startxfce4
+    elif [ -x /usr/bin/gnome-session ]; then
+      exec /usr/bin/gnome-session
+    elif [ -x /usr/bin/startplasma-x11 ]; then
+      exec /usr/bin/startplasma-x11
+    fi
+    EOF
+  - chmod +x /home/kali/.xsession
+  - chown kali:kali /home/kali/.xsession
+
+  # Start XRDP
+  - systemctl restart xrdp
+
+  # Set default target to graphical
+  - systemctl set-default graphical.target
+
+  # Disable automatic suspend (if using GNOME)
+  - |
+    if command -v gsettings >/dev/null 2>&1; then
+      gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing' || true
+      gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing' || true
+      sudo -u kali dbus-launch gsettings set org.gnome.desktop.session idle-delay 0 || true
+      sudo -u kali dbus-launch gsettings set org.gnome.desktop.screensaver lock-enabled false || true
+    fi
+
+  # Configure Wireshark for non-root capture
+  - echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
+  - DEBIAN_FRONTEND=noninteractive dpkg-reconfigure wireshark-common
+  - usermod -aG wireshark kali
+
+  # Update Kali tools database
+  - kali-tweaks --non-interactive || true
+
+  # Create welcome message
+  - |
+    cat > /etc/motd <<EOF
+
+    ╔═══════════════════════════════════════════════════════════╗
+    ║                                                           ║
+    ║           Kali Linux 2025.3 Pentest Workstation          ║
+    ║              with XRDP Remote Desktop Access              ║
+    ║                                                           ║
+    ║  User: kali                                               ║
+    ║  Pass: kali                                               ║
+    ║                                                           ║
+    ║  XRDP Port: 3389                                          ║
+    ║  SSH Port:  22                                            ║
+    ║                                                           ║
+    ║  Kali Tools, Docker, Wireshark Ready                      ║
+    ║                                                           ║
+    ║  Documentation: https://www.kali.org/docs/                ║
+    ║                                                           ║
+    ╚═══════════════════════════════════════════════════════════╝
+
+    EOF
+
+  # Final status marker
+  - echo "$(date) - Cloud-init provisioning complete" > /root/provisioning-complete
+  - echo "$(date) - Cloud-init provisioning complete" > /home/kali/provisioning-complete
+  - chown kali:kali /home/kali/provisioning-complete
+
+# Final message
+final_message: "Kali Linux 2025.3 Pentest Workstation provisioning complete after $UPTIME seconds"
