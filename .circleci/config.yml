@@ -627,6 +627,31 @@ commands:
               sudo apt-get install -y \
                 curl qemu-user libguestfs-tools qemu-user-static gzip p7zip-full
 
+              # Fix DNS resolution for virt-sysprep on Ubuntu 24.04
+              # systemd-resolved uses /etc/resolv.conf -> /run/systemd/resolve/stub-resolv.conf
+              # but virt-sysprep needs a real resolv.conf with nameservers
+              # Get DNS servers from systemd-resolved and create traditional resolv.conf
+              if [[ ! -f /etc/resolv.conf ]] || [[ -L /etc/resolv.conf ]]; then
+                echo "Creating /etc/resolv.conf for virt-sysprep DNS resolution"
+                # Extract DNS servers from systemd-resolved
+                DNS_SERVERS=$(resolvectl status --no-pager | grep 'DNS Servers:' | head -n1 | awk '{print $3}')
+                if [[ -z "${DNS_SERVERS}" ]]; then
+                  # Fallback to common public DNS if no DNS servers found
+                  DNS_SERVERS="1.1.1.1"
+                  echo "Warning: No DNS servers found, using fallback: ${DNS_SERVERS}"
+                fi
+                # Backup existing resolv.conf if it's a symlink
+                if [[ -L /etc/resolv.conf ]]; then
+                  sudo mv /etc/resolv.conf /etc/resolv.conf.backup
+                fi
+                # Create traditional resolv.conf with discovered DNS servers
+                echo "nameserver ${DNS_SERVERS}" | sudo tee /etc/resolv.conf
+                echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
+                echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
+                sudo chmod 644 /etc/resolv.conf
+                echo "Created /etc/resolv.conf with nameservers: ${DNS_SERVERS}, 1.1.1.1, 8.8.8.8"
+              fi
+
               bash hack/customize.sh ${FLAVOR} ${ARCH}
             else
               echo "Detected cached disk image ... continuing"
