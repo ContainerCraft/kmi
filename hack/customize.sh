@@ -170,6 +170,14 @@ if [[ "${CUSTOMIZE}" == "true" ]]; then
 		echo "Skipping pre-sparsify (SPARSIFY=false)"
 	fi
 
+	# Ensure DNS resolution works for virt-sysprep
+	# libguestfs needs /etc/resolv.conf in its appliance
+	if [[ ! -f /etc/resolv.conf ]] || [[ ! -s /etc/resolv.conf ]]; then
+		echo "Creating /etc/resolv.conf for libguestfs DNS resolution"
+		echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
+		echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
+	fi
+
 	# Customize Disk Image
 	sudo virt-sysprep \
 		--verbose \
