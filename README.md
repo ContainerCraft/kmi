@@ -67,6 +67,7 @@ spec:
 | **Fedora**              | 42          | Preview |  ✅   |  ✅   | `containercraft/fedora:42`           |
 | **Fedora CoreOS**       | 42          | Preview |  ✅   |  ✅   | `containercraft/fcos:42`             |
 | **FreeBSD**             | 15 Beta 2   | Preview |  ✅   |  ✅   | `containercraft/freebsd:15`          |
+| **Kali Linux**          | 2025.3      | Preview |  ✅   |  ❌   | `containercraft/kali:latest`         |
 | **openSUSE Leap**       | 16          | Preview |  ✅   |  ✅   | `containercraft/opensuse:leap-16`    |
 | **openSUSE Tumbleweed** | Rolling     | Preview |  ✅   |  ❌   | `containercraft/opensuse:tumbleweed` |
 | **OpenWrt**             | 24          | Preview |  ✅   |  ✅   | `containercraft/openwrt:24`          |

@@ -45,6 +45,9 @@ aliases:
   talos-flavors: &_talos-flavors
     - talos-1-11
 
+  kali-flavors: &_kali-flavors
+    - kali-linux
+
   cache-key: &_cache-key
     key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}
 
@@ -414,6 +417,31 @@ workflows:
               flavor: *_talos-flavors
       # End Talos #
 
+      # Start Kali Linux #
+      - customize:
+          name: customize-<< matrix.flavor >>-<< matrix.arch >>
+          matrix:
+            parameters:
+              flavor: *_kali-flavors
+              arch: [amd64]
+
+      - cradle:
+          requires:
+            - customize-<< matrix.flavor >>-amd64
+          name: cradle-<< matrix.flavor >>
+          matrix:
+            parameters:
+              flavor: *_kali-flavors
+
+      - trigger-tests:
+          requires:
+            - cradle-<< matrix.flavor >>
+          name: trigger-<< matrix.flavor >>-promotion
+          matrix:
+            parameters:
+              flavor: *_kali-flavors
+      # End Kali Linux #
+
 #################################################################################
 # Reuseable Jobs
 jobs:
@@ -597,7 +625,7 @@ commands:
               sudo apt-get upgrade -y
               sudo apt-get dist-upgrade -y
               sudo apt-get install -y \
-                curl qemu-user libguestfs-tools qemu-user-static gzip
+                curl qemu-user libguestfs-tools qemu-user-static gzip p7zip-full
 
               bash hack/customize.sh ${FLAVOR} ${ARCH}
             else

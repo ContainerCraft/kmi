@@ -180,3 +180,15 @@ target "talos-1-11" {
     FLAVOR = "talos-1-11"
   }
 }
+
+target "kali-linux" {
+  inherits = ["defaults"]
+  platforms = ["linux/amd64"]
+  tags = [
+    tag("kali", "2025-3"),
+    tag("kali", "latest"),
+  ]
+  args = {
+    FLAVOR = "kali-linux"
+  }
+}

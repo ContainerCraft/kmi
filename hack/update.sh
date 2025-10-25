@@ -167,6 +167,25 @@ vyos::rolling() {
 	echo "Check https://vyos.io/get/ for latest VyOS releases"
 }
 
+kali::linux() {
+	local file="images/kali-linux/env.sh"
+	source "${file}"
+	# Fetch current version by parsing the latest QEMU image filename from SHA256SUMS
+	local latest_file=$(curl -s https://mirror.fcix.net/kali-images/current/SHA256SUMS \
+		| grep 'qemu-amd64.7z$' | grep -v '.torrent' | awk '{print $2}')
+	local latest_version=$(echo "${latest_file}" | grep -oP 'kali-linux-\K[0-9]+\.[0-9]+')
+	local amd64_sha256sum=$(curl -s https://mirror.fcix.net/kali-images/current/SHA256SUMS \
+		| grep "${latest_file}" | awk '{print $1}')
+
+	if [[ -n "${latest_version}" ]] && [[ -n "${amd64_sha256sum}" ]]; then
+		sed -i "s/__VERSION=.*/__VERSION=\"${latest_version}\"/" "${file}"
+		sed -i "s/AMD64_SHA256SUM=.*/AMD64_SHA256SUM=${amd64_sha256sum}/" "${file}"
+		echo "Updated Kali Linux to version ${latest_version}"
+	else
+		echo "Warning: Could not fetch Kali Linux version or checksum"
+	fi
+}
+
 archlinux::latest
 ubuntu::24-04
 fedora::42
@@ -183,3 +202,4 @@ fcos::42
 openwrt::24
 freebsd::15
 vyos::rolling
+kali::linux

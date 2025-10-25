@@ -136,6 +136,17 @@ if [[ "${DOWNLOAD_FILE}" =~ \.gz$ ]]; then
 elif [[ "${DOWNLOAD_FILE}" =~ \.xz$ ]]; then
 	unxz "${DOWNLOAD_FILE}"
 	mv "${DOWNLOAD_FILE/.xz/}" "${QCOW2_TMPFILE}"
+elif [[ "${DOWNLOAD_FILE}" =~ \.7z$ ]]; then
+	7z x "${DOWNLOAD_FILE}" -o7z-extract
+	# Find the qcow2 file in the extracted directory
+	EXTRACTED_QCOW2=$(find 7z-extract -name "*.qcow2" -type f | head -n 1)
+	if [[ -n "${EXTRACTED_QCOW2}" ]]; then
+		mv "${EXTRACTED_QCOW2}" "${QCOW2_TMPFILE}"
+		rm -rf 7z-extract
+	else
+		echo "Error: No qcow2 file found in 7z archive"
+		exit 1
+	fi
 else
 	mv "${DOWNLOAD_FILE}" "${QCOW2_TMPFILE}"
 fi
