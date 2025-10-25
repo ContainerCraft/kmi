@@ -93,6 +93,7 @@ spec:
         source:
           registry:
             url: docker://docker.io/containercraft/kali:latest-dev
+            pullMethod: node
 
   template:
     metadata:

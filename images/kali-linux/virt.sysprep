@@ -3,6 +3,11 @@
 # This allows both the built-in kali user and cloud-init to coexist
 
 update
-install python3,tmux,git,vim,cloud-init,qemu-guest-agent
+install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,btop
 run-command systemctl enable qemu-guest-agent
+run-command systemctl enable ssh
+run-command systemctl enable cloud-init-local
+run-command systemctl enable cloud-init
+run-command systemctl enable cloud-config
+run-command systemctl enable cloud-final
 run-command apt-get autoremove -y && apt-get clean
