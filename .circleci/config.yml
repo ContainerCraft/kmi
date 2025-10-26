@@ -49,7 +49,7 @@ aliases:
     - kali-linux
 
   cache-key: &_cache-key
-    key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}
+    key: << parameters.flavor >>-<< parameters.arch >>-{{ checksum "hack/customize.sh" }}-{{ checksum "images/<< parameters.flavor >>/env.sh" }}-{{ checksum "images/<< parameters.flavor >>/virt.sysprep" }}
 
 #################################################################################
 # Job Scheduler
