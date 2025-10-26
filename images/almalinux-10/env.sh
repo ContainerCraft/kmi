@@ -1,4 +1,7 @@
-VIRT_SYSPREP_OPERATIONS=net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
+# Enable customize for package installation and service enablement
+# customize operation REQUIRED to install packages and enable services
+# AlmaLinux 10 uses x86_64_v2 architecture (compatible with libguestfs appliance)
+VIRT_SYSPREP_OPERATIONS=net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache,customize
 _ARCH=$(echo ${ARCH} | sed 's/amd64/x86_64_v2/;s/arm64/aarch64/')
 BASE_URL=https://repo.almalinux.org/almalinux/10/cloud/"${_ARCH}"/images/
 DOWNLOAD_FILE=AlmaLinux-10-GenericCloud-latest."${_ARCH}".qcow2

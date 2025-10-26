@@ -1,7 +1,16 @@
+# Create resolv.conf FIRST to enable DNS resolution for package installation
+# This is required because libguestfs appliance may not have valid DNS config
+run-command sh -c 'printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > /etc/resolv.conf'
+
 update
 edit /etc/selinux/config:s/^SELINUX=*/SELINUX=permissive/
-install git,vim,tmux,net-tools,qemu-guest-agent
+install cloud-init,cloud-utils-growpart,openssh-server,qemu-guest-agent,python3,tmux,git,vim,net-tools,btop
 run-command systemctl enable qemu-guest-agent
+run-command systemctl enable sshd
+run-command systemctl enable cloud-init-local.service
+run-command systemctl enable cloud-init-network.service
+run-command systemctl enable cloud-config.service
+run-command systemctl enable cloud-final.service
 run-command dnf clean all
 delete /var/cache/dnf
 selinux-relabel
