@@ -1,0 +1,258 @@
+#cloud-config
+hostname: ubuntu
+fqdn: ubuntu.home.arpa
+ssh_pwauth: true
+disable_root: false
+
+# User configuration
+chpasswd:
+  list: |
+    root:kc2admin
+    kc2user:kc2user
+  expire: False
+
+users:
+  - default
+  - name: kc2user
+    gecos: Kargo Compute User
+    shell: /bin/bash
+    lock_passwd: false
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: adm,cdrom,dip,lxd,plugdev,sudo,docker,libvirt,kvm,xrdp,ssl-cert,audio,video
+    ssh_import_id:
+      - gh:usrbinkat
+
+# Disk expansion
+growpart:
+  mode: auto
+  devices: ["/"]
+  ignore_growroot_disabled: true
+
+# System configuration
+timezone: UTC
+
+# Polkit rules for passwordless VDI operations
+write_files:
+  - path: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
+    content: |
+      [Allow Colord all Users]
+      Identity=unix-user:*
+      Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/46-allow-update-repo.pkla
+    content: |
+      [Allow Package Management all Users]
+      Identity=unix-user:*
+      Action=org.debian.apt.*;org.freedesktop.packagekit.*
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/47-allow-networkmanager.pkla
+    content: |
+      [Allow NetworkManager all Users]
+      Identity=unix-user:*
+      Action=org.freedesktop.NetworkManager.*
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/48-allow-gnome-system.pkla
+    content: |
+      [Allow GNOME System Settings]
+      Identity=unix-user:*
+      Action=org.gnome.controlcenter.datetime.configure;org.gnome.controlcenter.user-accounts.*
+      ResultAny=no
+      ResultInactive=no
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+  - path: /etc/polkit-1/localauthority/50-local.d/49-nopasswd-shutdown.pkla
+    content: |
+      [Allow shutdown/reboot without password]
+      Identity=unix-user:*
+      Action=org.freedesktop.login1.power-off;org.freedesktop.login1.power-off-multiple-sessions;org.freedesktop.login1.reboot;org.freedesktop.login1.reboot-multiple-sessions
+      ResultAny=yes
+      ResultInactive=yes
+      ResultActive=yes
+    owner: root:root
+    permissions: "0644"
+
+# Package management
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+
+# Packages to install
+packages:
+  # Base utilities
+  - vim
+  - git
+  - tmux
+  - htop
+  - btop
+  - ncdu
+  - tree
+  - curl
+  - wget
+  - unzip
+  - tar
+  - rsync
+  - lnav
+  - jq
+  - socat
+  - net-tools
+  - dnsutils
+  - traceroute
+  - telnet
+  - nmap
+  - tcpdump
+  - screen
+  - qemu-guest-agent
+
+  # Desktop environment
+  - ubuntu-desktop
+  - gnome-shell-extensions
+  - gnome-shell-extension-manager
+  - chrome-gnome-shell
+  - gnome-terminal
+
+  # Remote desktop
+  - xrdp
+  - xorgxrdp
+
+  # Virtualization
+  - qemu-kvm
+  - libvirt-daemon-system
+  - libguestfs-tools
+  - libvirt-clients
+  - virt-manager
+  - bridge-utils
+
+  # Container tools
+  - docker.io
+  - docker-compose
+
+  # Development tools
+  - build-essential
+  - python3
+  - python3-pip
+  - python3-venv
+  - nodejs
+  - npm
+
+# Commands to run after package installation
+runcmd:
+  # Add Microsoft Edge repository
+  - curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-edge.gpg
+  - echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-edge.gpg] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge.list
+  - apt-get update
+  - apt-get install -y microsoft-edge-stable
+
+  # Create user directories
+  - mkdir -p /home/kc2user/.ssh
+  - mkdir -p /home/kc2user/.kube
+  - mkdir -p /home/kc2user/.config
+  - chown -R kc2user:kc2user /home/kc2user
+  - chmod 700 /home/kc2user/.ssh
+
+  # Import SSH keys from GitHub
+  - curl -fsSL https://github.com/usrbinkat.keys >> /home/kc2user/.ssh/authorized_keys
+  - chmod 600 /home/kc2user/.ssh/authorized_keys
+  - chown kc2user:kc2user /home/kc2user/.ssh/authorized_keys
+
+  # Configure QEMU guest agent
+  - systemctl enable --now qemu-guest-agent
+  - sleep 6
+  - systemctl restart qemu-guest-agent
+
+  # Configure Docker
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker kc2user
+
+  # Configure libvirt
+  - systemctl enable libvirtd
+  - systemctl start libvirtd
+  - usermod -aG libvirt kc2user
+  - usermod -aG kvm kc2user
+
+  # Configure XRDP for GNOME
+  - systemctl enable xrdp
+  - systemctl enable xrdp-sesman
+  - echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
+  - echo "gnome-session" > /home/kc2user/.xsession
+  - chmod +x /home/kc2user/.xsession
+  - chown kc2user:kc2user /home/kc2user/.xsession
+
+  # Add kc2user to xrdp ssl-cert group
+  - adduser xrdp ssl-cert
+  - usermod -aG ssl-cert kc2user
+
+  # Configure XRDP session
+  - |
+    cat > /etc/xrdp/startwm.sh <<'EOF'
+    #!/bin/sh
+    if [ -r /etc/default/locale ]; then
+      . /etc/default/locale
+      export LANG LANGUAGE
+    fi
+
+    # Start GNOME session
+    exec /usr/bin/gnome-session
+    EOF
+  - chmod +x /etc/xrdp/startwm.sh
+  # Start XRDP
+  - systemctl restart xrdp
+
+  # Set default target to graphical
+  - systemctl set-default graphical.target
+
+  # Disable automatic suspend
+  - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+  - gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+
+  # Configure GNOME settings for kc2user
+  - sudo -u kc2user dbus-launch gsettings set org.gnome.desktop.session idle-delay 0
+  - sudo -u kc2user dbus-launch gsettings set org.gnome.desktop.screensaver lock-enabled false
+
+  # Disable automatic updates popup
+  - gsettings set com.ubuntu.update-notifier no-show-notifications true
+
+  # Create welcome message
+  - |
+    cat > /etc/motd <<EOF
+
+    ╔═══════════════════════════════════════════════════════════╗
+    ║                                                           ║
+    ║              Ubuntu 24.04 Workstation VM                  ║
+    ║              with XRDP and GNOME Desktop                  ║
+    ║                                                           ║
+    ║  User: kc2user                                            ║
+    ║                                                           ║
+    ║  XRDP Port: 3389                                          ║
+    ║  SSH Port:  22                                            ║
+    ║                                                           ║
+    ║  RDP, Docker, Libvirt Ready                               ║
+    ║                                                           ║
+    ╚═══════════════════════════════════════════════════════════╝
+
+    EOF
+
+  # Final status marker
+  - echo "$(date) - Cloud-init provisioning complete" > /root/provisioning-complete
+  - echo "$(date) - Cloud-init provisioning complete" > /home/kc2user/provisioning-complete
+  - chown kc2user:kc2user /home/kc2user/provisioning-complete
+
+# Final message
+final_message: "Ubuntu 24.04 Workstation VM provisioning complete after $UPTIME seconds"

@@ -1,0 +1,199 @@
+#cloud-config
+hostname: fedora
+fqdn: fedora.home.arpa
+ssh_pwauth: true
+disable_root: false
+
+# User configuration
+chpasswd:
+  list: |
+    root:kc2admin
+    kc2user:kc2user
+  expire: False
+
+users:
+  - default
+  - name: kc2user
+    gecos: Kargo Compute User
+    shell: /bin/bash
+    lock_passwd: false
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: wheel,adm,systemd-journal,docker,libvirt,kvm,qemu,xrdp,audio,video
+    ssh_import_id:
+      - gh:usrbinkat
+
+# Disk expansion
+growpart:
+  mode: auto
+  devices: ["/"]
+  ignore_growroot_disabled: true
+
+# System configuration
+timezone: UTC
+
+# Fix DNS timing: Make cloud-config.service wait for network-online.target
+# This ensures NetworkManager finishes configuring DNS before package operations
+write_files:
+  - path: /etc/systemd/system/cloud-config.service.d/wait-network-online.conf
+    content: |
+      [Unit]
+      After=network-online.target
+      Wants=network-online.target
+    owner: root:root
+    permissions: "0644"
+
+# Reload systemd early so cloud-config.service picks up the drop-in
+bootcmd:
+  - [systemctl, daemon-reload]
+
+package_update: false
+package_upgrade: false
+
+# Note: packages list disabled because cloud-config stage runs before DNS ready
+# All package operations moved to runcmd (cloud-final stage) with DNS wait
+
+# Repository configuration
+yum_repos:
+  docker-ce:
+    name: Docker CE Stable
+    baseurl: https://download.docker.com/linux/fedora/$releasever/$basearch/stable
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://download.docker.com/linux/fedora/gpg
+
+# Commands to run
+runcmd:
+  # Wait for DNS to be functional before continuing
+  - |
+    echo "Waiting for DNS resolution..."
+    for i in {1..60}; do
+      if getent hosts fedoraproject.org >/dev/null 2>&1; then
+        echo "DNS is working!"
+        break
+      fi
+      echo "DNS not ready, waiting... (attempt $i/60)"
+      sleep 2
+    done
+  - sudo dnf update -y
+  - sudo dnf upgrade -y
+
+  # Add Microsoft Edge repository
+  - sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+  - sudo dnf config-manager addrepo --from-repofile='https://packages.microsoft.com/yumrepos/edge/config.repo'
+
+  # Install all packages after DNS is ready
+  - |
+    sudo dnf install -y \
+      vim git tmux htop btop ncdu tree curl wget unzip tar rsync \
+      lnav jq socat net-tools bind-utils traceroute telnet nmap tcpdump screen \
+      qemu-guest-agent libguestfs-tools \
+      gnome-extensions-app \
+      gnome-shell-extension-appindicator gnome-shell-extension-dash-to-dock \
+      xrdp xorgxrdp \
+      libvirt virt-manager virt-viewer \
+      docker-ce docker-ce-cli containerd.io docker-compose-plugin \
+      gcc make python3 python3-pip nodejs npm \
+      gnome-terminal gnome-terminal-nautilus \
+      nautilus nautilus-extensions \
+      f42-backgrounds f42-backgrounds-gnome f42-backgrounds-base \
+      fedora-jam-backgrounds fedora-jam-backgrounds-gnome \
+      fedora-workstation-backgrounds fedorainfinity-backgrounds \
+      desktop-backgrounds-gnome \
+      microsoft-edge-stable
+
+  # Install desktop environment (large group install)
+  - sudo dnf groupinstall -y "Workstation" "Virtualization"
+
+  # Create user directories
+  - mkdir -p /home/kc2user/.ssh
+  - mkdir -p /home/kc2user/.kube
+  - mkdir -p /home/kc2user/.config
+  - chown -R kc2user:kc2user /home/kc2user
+  - chmod 700 /home/kc2user/.ssh
+
+  # Import SSH keys from GitHub
+  - curl -fsSL https://github.com/usrbinkat.keys >> /home/kc2user/.ssh/authorized_keys
+  - chmod 600 /home/kc2user/.ssh/authorized_keys
+  - chown kc2user:kc2user /home/kc2user/.ssh/authorized_keys
+
+  # Configure QEMU guest agent
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent
+
+  # Configure Docker
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker kc2user
+
+  # Configure libvirt
+  - systemctl enable libvirtd
+  - systemctl start libvirtd
+  - usermod -aG libvirt kc2user
+  - usermod -aG kvm kc2user
+  - usermod -aG qemu kc2user
+
+  # Configure XRDP for GNOME
+  - systemctl enable xrdp
+  - systemctl enable xrdp-sesman
+  - echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
+  - echo "gnome-session" > /home/kc2user/.Xclients
+  - chmod +x /home/kc2user/.Xclients
+  - chown kc2user:kc2user /home/kc2user/.Xclients
+
+  # Configure firewall for XRDP
+  # firewall-cmd --permanent --add-port=3389/tcp
+  # firewall-cmd --permanent --add-port=443/tcp
+  # firewall-cmd --permanent --add-port=80/tcp
+  # firewall-cmd --permanent --add-port=22/tcp
+  # firewall-cmd --reload
+  - systemctl start xrdp
+
+  # Set default target to graphical
+  - systemctl set-default graphical.target
+
+  # Enable automatic login for kc2user (optional)
+  - |
+    cat > /etc/gdm/custom.conf <<EOF
+    [daemon]
+    AutomaticLoginEnable=false
+    AutomaticLogin=kc2user
+    [security]
+    [xdmcp]
+    [chooser]
+    [debug]
+    EOF
+
+  # Configure GNOME settings for kc2user
+  - |
+    sudo -u kc2user dbus-launch gsettings set org.gnome.desktop.session idle-delay 0
+  - |
+    sudo -u kc2user dbus-launch gsettings set org.gnome.desktop.screensaver lock-enabled false
+
+  # Create welcome message
+  - |
+    cat > /etc/motd <<EOF
+
+    ╔═══════════════════════════════════════════════════════════╗
+    ║                                                           ║
+    ║              Fedora 42 Workstation VM                     ║
+    ║              with XRDP and GNOME Desktop                  ║
+    ║                                                           ║
+    ║  User: kc2user                                            ║
+    ║  Pass: kc2user                                            ║
+    ║                                                           ║
+    ║  XRDP Port: 3389                                          ║
+    ║  SSH Port:  22                                            ║
+    ║                                                           ║
+    ║  RDP, Docker, Libvirt Ready                               ║
+    ║                                                           ║
+    ╚═══════════════════════════════════════════════════════════╝
+
+    EOF
+
+  # Final status marker
+  - echo "$(date) - Cloud-init provisioning complete" > /root/provisioning-complete
+  - echo "$(date) - Cloud-init provisioning complete" > /home/kc2user/provisioning-complete
+  - chown kc2user:kc2user /home/kc2user/provisioning-complete
+
+# Final message
+final_message: "Fedora 42 Workstation VM provisioning complete after $UPTIME seconds"

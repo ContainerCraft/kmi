@@ -27,12 +27,13 @@ fi
 
 # Create QEMU wrapper for maximum native CPU performance
 # Uses -cpu host for direct passthrough of all host CPU features
-# Adds +x86-64-v3 for CentOS Stream 10 and modern RHEL compatibility
 # Includes la57=off workaround for QEMU bug (RHBZ#2082806)
+# NOTE: Do NOT add +x86-64-v3 - the appliance itself is x86-64-v2
+# Guests requiring x86-64-v3 (like CentOS Stream 10) must use cloud-init for customization
 QEMU_WRAPPER=$(mktemp)
 cat > "${QEMU_WRAPPER}" << 'EOF'
 #!/bin/bash
-exec qemu-system-x86_64 -cpu host,+x86-64-v3,la57=off "$@"
+exec qemu-system-x86_64 -cpu host,la57=off "$@"
 EOF
 chmod +x "${QEMU_WRAPPER}"
 export LIBGUESTFS_HV="${QEMU_WRAPPER}"

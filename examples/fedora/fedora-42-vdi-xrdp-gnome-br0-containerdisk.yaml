@@ -1,0 +1,226 @@
+---
+# Fedora 42 Workstation VM with XRDP and GNOME Desktop
+# Uses containerDisk from docker.io/containercraft/fedora:42
+# Comprehensive device configuration for multi-OS compatibility
+# Network: enp1s0 bridged to br0 with DHCP (enables nested virtualization)
+#
+# Quick Deployment (Recommended):
+# ================================
+# Use the deployment script to handle secrets and VM creation:
+#
+#   ./examples/fedora/deploy.sh
+#
+# Or with custom SSH key and userdata files:
+#
+#   ./examples/fedora/deploy.sh \
+#     --ssh-key ~/.ssh/my_custom_key.pub \
+#     --userdata ./my-custom-userdata.yaml \
+#     --vm-manifest ./my-custom-vm.yaml
+#
+# Manual Deployment:
+# ==================
+#
+# 1. Create SSH public key secret for kc2user:
+#    kubectl create secret generic kargo-sshpubkey-kc2user \
+#      --from-file=key1=$HOME/.ssh/id_ed25519.pub \
+#      --namespace=default
+#
+# 2. Create cloud-init userdata secret:
+#    kubectl create secret generic fedora-42-userdata \
+#      --from-file=userdata=examples/fedora/fedora-42-userdata.yaml \
+#      --namespace=default
+#
+# 3. Verify network attachment definition exists:
+#    kubectl get net-attach-def br0-network-attachment
+#
+# 4. Deploy the VirtualMachine:
+#    kubectl apply -f examples/fedora/fedora-42-vdi-xrdp-gnome-br0-containerdisk.yaml
+#
+# 5. Monitor VM startup:
+#    kubectl get vm,vmi,dv,pvc
+#    kubectl get vmi fedora-42-xrdp-gnome -o yaml
+#
+# 6. Watch cloud-init progress (once VM is running):
+#    virtctl console fedora-42-xrdp-gnome
+#    # Or check logs inside VM: tail -f /var/log/cloud-init-output.log
+#
+# 7. Get VM IP address:
+#    kubectl get vmi fedora-42-xrdp-gnome -o jsonpath='{.status.interfaces[0].ipAddress}'
+#
+# 8. Connect via SSH:
+#    ssh kc2user@<VM_IP>
+#
+# 9. Connect via RDP:
+#    xfreerdp /v:<VM_IP>:3389 /u:kc2user /p:kc2user /cert:ignore
+#    # Or use any RDP client: rdesktop, remmina, Microsoft Remote Desktop, etc.
+#
+# Cleanup:
+# ========
+# kubectl delete vm fedora-42-xrdp-gnome
+# kubectl delete pvc fedora-42-volume-vda-root
+# kubectl delete dv fedora-42-volume-vda-root
+# kubectl delete secret fedora-42-userdata
+# kubectl delete secret kargo-sshpubkey-kc2user
+#
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: fedora-42-xrdp-gnome
+  namespace: default
+  labels:
+    app: fedora-42-xrdp-gnome
+    os: fedora
+    version: "42"
+    role: workstation
+  annotations:
+    description: "Fedora 42 Workstation with XRDP and GNOME Desktop"
+spec:
+  # Automatically start the VM
+  runStrategy: Always
+
+  # DataVolume for persistent root disk
+  dataVolumeTemplates:
+    - metadata:
+        name: fedora-42-volume-vda-root
+      spec:
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 64Gi
+          storageClassName: hostpath-provisioner
+        source:
+          registry:
+            url: docker://docker.io/containercraft/fedora:42
+
+  template:
+    metadata:
+      labels:
+        app: fedora-42-xrdp-gnome
+        os: fedora
+        version: "42"
+        role: workstation
+      annotations:
+        vm.kubevirt.io/os: "fedora"
+    spec:
+      # Enable SSH key injection via qemu-guest-agent
+      accessCredentials:
+        - sshPublicKey:
+            propagationMethod:
+              qemuGuestAgent:
+                users:
+                  - kc2user
+            source:
+              secret:
+                secretName: kargo-sshpubkey-kc2user
+
+      hostname: fedora-42-xrdp-gnome
+      terminationGracePeriodSeconds: 30
+
+      domain:
+        # Machine type for modern features and compatibility
+        machine:
+          type: q35
+
+        # Firmware configuration
+        firmware:
+          uuid: f7a8b944-9559-4c4c-b7d7-6e4f3e5a9c3d
+          serial: fedora-42-xrdp-gnome-001
+          bootloader:
+            bios: {}
+
+        # CPU configuration: 4 cores, host-passthrough for best performance
+        cpu:
+          cores: 4
+          sockets: 1
+          threads: 1
+          model: host-passthrough
+          dedicatedCpuPlacement: false
+
+        # Clock and timer configuration
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+
+        # Memory configuration: 16GB
+        resources:
+          requests:
+            memory: 16Gi
+            devices.kubevirt.io/kvm: "1"
+          limits:
+            memory: 16Gi
+
+        # Features for modern OS support
+        features:
+          acpi: {}
+          apic: {}
+          smm:
+            enabled: true
+
+        # Device configuration
+        devices:
+          autoattachPodInterface: false
+          autoattachSerialConsole: true
+          autoattachGraphicsDevice: true
+          networkInterfaceMultiqueue: true
+          rng: {}
+
+          # Disk configuration
+          disks:
+            - name: root-disk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+
+          # Network interface with stable MAC address
+          interfaces:
+            - name: enp1s0
+              bridge: {}
+              model: virtio
+              macAddress: "52:54:00:fe:d0:42"
+
+          # USB tablet for better pointer handling
+          inputs:
+            - type: tablet
+              bus: usb
+              name: tablet
+
+      # Network configuration
+      networks:
+        - name: enp1s0
+          multus:
+            networkName: br0-network-attachment
+
+      # Volume configuration
+      volumes:
+        - name: root-disk
+          dataVolume:
+            name: fedora-42-volume-vda-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            networkData: |
+              version: 2
+              renderer: NetworkManager
+              ethernets:
+                enp1s0:
+                  dhcp4: false
+                  dhcp6: false
+              bridges:
+                br0:
+                  interfaces: [enp1s0]
+                  dhcp4: true
+                  dhcp6: true
+                  dhcp-identifier: mac
+            secretRef:
+              name: fedora-42-userdata

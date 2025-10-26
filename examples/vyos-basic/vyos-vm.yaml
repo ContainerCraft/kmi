@@ -1,0 +1,85 @@
+---
+# Basic VyOS Router VM using ephemeral containerDisk
+# Uses docker.io/containercraft/vyos:rolling
+# Simple dual-interface setup:
+#   eth0 -> Multus br1 (WAN/upstream)
+#   eth1 -> Multus br0 (LAN/downstream)
+
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: vyos-basic
+  namespace: default
+  labels:
+    app: vyos-basic
+    role: router
+spec:
+  # Automatically start the VM
+  runStrategy: Always
+
+  template:
+    metadata:
+      labels:
+        app: vyos-basic
+        role: router
+    spec:
+      hostname: vyos-basic
+      terminationGracePeriodSeconds: 0
+
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 1
+          model: host-passthrough
+
+        memory:
+          guest: 2Gi
+
+        devices:
+          rng: {}
+          autoattachPodInterface: false
+          autoattachSerialConsole: true
+          autoattachGraphicsDevice: false
+
+          disks:
+            - name: containerdisk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+
+          interfaces:
+            # eth0 - WAN interface (Multus br1)
+            - name: eth0
+              bridge: {}
+              macAddress: "52:54:00:aa:bb:01"
+            # eth1 - LAN interface (Multus br0)
+            - name: eth1
+              bridge: {}
+              macAddress: "52:54:00:aa:bb:02"
+
+      networks:
+        # eth0 connects to wan-br1 Multus network (WAN/upstream)
+        - name: eth0
+          multus:
+            networkName: wan-br1
+        # eth1 connects to lan-br0 Multus network (LAN/downstream)
+        - name: eth1
+          multus:
+            networkName: lan-br0
+
+      volumes:
+        # Ephemeral VyOS image from containerDisk
+        - name: containerdisk
+          containerDisk:
+            image: docker.io/containercraft/vyos:rolling
+            imagePullPolicy: Always
+
+        # Cloud-init configuration from secret
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            secretRef:
+              name: vyos-basic-config

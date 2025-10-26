@@ -1,6 +1,7 @@
-# Enable customize for package installation and service enablement
-# customize operation REQUIRED to install packages and enable services
-VIRT_SYSPREP_OPERATIONS=net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache,customize
+# CentOS Stream 10 requires x86-64-v3 CPU features, which the libguestfs appliance does not support
+# Package installation and service enablement must be done via cloud-init userdata at VM runtime
+# customize operation disabled - use cloud-init for package installation
+VIRT_SYSPREP_OPERATIONS=net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
 _BUILD_DATE=latest
 _ARCH=$(echo ${ARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
 BASE_URL=https://cloud.centos.org/centos/10-stream/"${_ARCH}"/images
