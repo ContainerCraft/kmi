@@ -7,7 +7,7 @@ install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,pyth
 run-command systemctl enable qemu-guest-agent
 run-command systemctl enable ssh
 run-command systemctl enable cloud-init-local.service
-run-command systemctl enable cloud-init-network.service
+run-command systemctl enable cloud-init.service
 run-command systemctl enable cloud-config.service
 run-command systemctl enable cloud-final.service
 run-command apt-get autoremove -y && apt-get clean
