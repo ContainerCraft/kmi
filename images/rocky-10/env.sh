@@ -1,3 +1,6 @@
+# Rocky Linux 10 requires x86-64-v3 CPU features, which the libguestfs appliance does not support
+# Package installation and service enablement must be done via cloud-init userdata at VM runtime
+# customize operation disabled - use cloud-init for package installation
 VIRT_SYSPREP_OPERATIONS=net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
 AMD64_BASE_URL=https://download.rockylinux.org/pub/rocky/10/images/x86_64/
 AMD64_DOWNLOAD_FILE=Rocky-10-GenericCloud-Base.latest.x86_64.qcow2
