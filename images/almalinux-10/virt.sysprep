@@ -4,7 +4,7 @@ run-command sh -c 'printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > /etc/reso
 
 update
 edit /etc/selinux/config:s/^SELINUX=*/SELINUX=permissive/
-install cloud-init,cloud-utils-growpart,openssh-server,qemu-guest-agent,python3,tmux,git,vim,net-tools,btop
+install cloud-init,cloud-utils-growpart,openssh-server,qemu-guest-agent,python3,tmux,git,vim,net-tools
 run-command systemctl enable qemu-guest-agent
 run-command systemctl enable sshd
 run-command systemctl enable cloud-init-local.service
