@@ -16,6 +16,33 @@ set -ex
 export LIBGUESTFS_BACKEND=direct
 export LIBGUESTFS_CACHEDIR=${HOME}
 
+# Force KVM hardware acceleration if available for maximum performance
+# Only enable if /dev/kvm exists to avoid errors on systems without KVM
+if [[ -e /dev/kvm ]]; then
+	export LIBGUESTFS_BACKEND_SETTINGS=force_kvm
+	echo "KVM hardware acceleration enabled"
+else
+	echo "Warning: /dev/kvm not found, using TCG software emulation (slower)"
+fi
+
+# Create QEMU wrapper for maximum native CPU performance
+# Uses -cpu host for direct passthrough of all host CPU features
+# Adds +x86-64-v3 for CentOS Stream 10 and modern RHEL compatibility
+# Includes la57=off workaround for QEMU bug (RHBZ#2082806)
+QEMU_WRAPPER=$(mktemp)
+cat > "${QEMU_WRAPPER}" << 'EOF'
+#!/bin/bash
+exec qemu-system-x86_64 -cpu host,+x86-64-v3,la57=off "$@"
+EOF
+chmod +x "${QEMU_WRAPPER}"
+export LIBGUESTFS_HV="${QEMU_WRAPPER}"
+
+# Cleanup function to remove QEMU wrapper on exit
+cleanup() {
+	rm -f "${QEMU_WRAPPER}"
+}
+trap cleanup EXIT
+
 QCOW2_FILE=${FLAVOR}-${ARCH}.qcow2
 QCOW2_TMPFILE=tmp.${FLAVOR}-${ARCH}.qcow2
 
@@ -168,14 +195,6 @@ if [[ "${CUSTOMIZE}" == "true" ]]; then
 			"${QCOW2_TMPFILE}"
 	else
 		echo "Skipping pre-sparsify (SPARSIFY=false)"
-	fi
-
-	# Ensure DNS resolution works for virt-sysprep
-	# libguestfs needs /etc/resolv.conf in its appliance
-	if [[ ! -f /etc/resolv.conf ]] || [[ ! -s /etc/resolv.conf ]]; then
-		echo "Creating /etc/resolv.conf for libguestfs DNS resolution"
-		echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
-		echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
 	fi
 
 	# Customize Disk Image
