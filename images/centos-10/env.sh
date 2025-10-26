@@ -2,6 +2,8 @@
 # Package installation and service enablement must be done via cloud-init userdata at VM runtime
 # customize operation disabled - use cloud-init for package installation
 VIRT_SYSPREP_OPERATIONS=net-hostname,net-hwaddr,machine-id,dhcp-server-state,dhcp-client-state,yum-uuid,udev-persistent-net,tmp-files,smolt-uuid,rpm-db,package-manager-cache
+# Skip tests that require cloud-init/qemu-guest-agent/SSH (not installed due to x86-64-v3 incompatibility)
+SKIP="qemu-guest-agent|ssh"
 _BUILD_DATE=latest
 _ARCH=$(echo ${ARCH} | sed 's/amd64/x86_64/;s/arm64/aarch64/')
 BASE_URL=https://cloud.centos.org/centos/10-stream/"${_ARCH}"/images
