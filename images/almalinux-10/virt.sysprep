@@ -8,7 +8,7 @@ install cloud-init,cloud-utils-growpart,openssh-server,qemu-guest-agent,python3,
 run-command systemctl enable qemu-guest-agent
 run-command systemctl enable sshd
 run-command systemctl enable cloud-init-local.service
-run-command systemctl enable cloud-init-network.service
+run-command systemctl enable cloud-init.service
 run-command systemctl enable cloud-config.service
 run-command systemctl enable cloud-final.service
 run-command dnf clean all
