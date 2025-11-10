@@ -2,29 +2,59 @@
 # Only clean logs and temporary files, do NOT remove user accounts
 # This allows both the built-in kali user and cloud-init to coexist
 
-# Create resolv.conf FIRST to enable DNS resolution for package installation
-# This is required because libguestfs appliance may not have valid DNS config
-write /etc/resolv.conf:nameserver 1.1.1.1
-append-line /etc/resolv.conf:nameserver 8.8.8.8
-
-update
-install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,btop,curl,ca-certificates,xz-utils
-run-command systemctl enable qemu-guest-agent
-run-command systemctl enable ssh
-run-command systemctl enable cloud-init-local.service
-run-command systemctl enable cloud-init-network.service
-run-command systemctl enable cloud-config.service
-run-command systemctl enable cloud-final.service
-
-# ============================================================================
-# Phase 2: Mise Installation Integration
-# ============================================================================
-
-# Install mise binary (polyglot runtime manager)
-# Using direct binary download for reliability and offline capability
-run-command curl -fsSL https://github.com/jdx/mise/releases/latest/download/mise-latest-linux-x64 -o /usr/local/bin/mise
-run-command chmod 755 /usr/local/bin/mise
-run-command /usr/local/bin/mise --version
+# Consolidated installation script with manual network configuration
+write /tmp/setup-packages.sh:#!/bin/bash
+append-line /tmp/setup-packages.sh:set -ex
+append-line /tmp/setup-packages.sh:echo "===== Bringing up network interface ====="
+append-line /tmp/setup-packages.sh:ip link set eth0 up
+append-line /tmp/setup-packages.sh:ip addr add 169.254.2.100/16 dev eth0
+append-line /tmp/setup-packages.sh:ip route add default via 169.254.2.2
+append-line /tmp/setup-packages.sh:ip addr show
+append-line /tmp/setup-packages.sh:ip route show
+append-line /tmp/setup-packages.sh:echo "===== Configuring DNS ====="
+append-line /tmp/setup-packages.sh:echo "nameserver 1.1.1.1" > /etc/resolv.conf
+append-line /tmp/setup-packages.sh:echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+append-line /tmp/setup-packages.sh:echo "nameserver 169.254.2.3" >> /etc/resolv.conf
+append-line /tmp/setup-packages.sh:cat /etc/resolv.conf
+append-line /tmp/setup-packages.sh:echo "===== Testing connectivity ====="
+append-line /tmp/setup-packages.sh:ping -c 2 169.254.2.2 || echo "Gateway unreachable"
+append-line /tmp/setup-packages.sh:ping -c 2 1.1.1.1 || echo "Internet unreachable"
+append-line /tmp/setup-packages.sh:echo "===== Testing DNS resolution ====="
+append-line /tmp/setup-packages.sh:nslookup github.com || echo "github.com DNS failed"
+append-line /tmp/setup-packages.sh:nslookup http.kali.org || echo "kali.org DNS failed"
+append-line /tmp/setup-packages.sh:echo "===== Installing APT packages ====="
+append-line /tmp/setup-packages.sh:apt-get update -y
+append-line /tmp/setup-packages.sh:apt-get install -y cloud-init cloud-initramfs-growroot openssh-server qemu-guest-agent python3 tmux git vim btop curl ca-certificates xz-utils
+append-line /tmp/setup-packages.sh:systemctl enable qemu-guest-agent
+append-line /tmp/setup-packages.sh:systemctl enable ssh
+append-line /tmp/setup-packages.sh:systemctl enable cloud-init-local.service
+append-line /tmp/setup-packages.sh:systemctl enable cloud-init-network.service
+append-line /tmp/setup-packages.sh:systemctl enable cloud-config.service
+append-line /tmp/setup-packages.sh:systemctl enable cloud-final.service
+append-line /tmp/setup-packages.sh:echo "===== Installing mise ====="
+append-line /tmp/setup-packages.sh:MISE_VERSION=v2025.11.3
+append-line /tmp/setup-packages.sh:curl -fsSL https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-x64 -o /usr/local/bin/mise
+append-line /tmp/setup-packages.sh:chmod 755 /usr/local/bin/mise
+append-line /tmp/setup-packages.sh:/usr/local/bin/mise --version
+append-line /tmp/setup-packages.sh:echo "===== Installing Lix/Nix ====="
+append-line /tmp/setup-packages.sh:mkdir -p /run/systemd/system
+append-line /tmp/setup-packages.sh:mkdir -p /var/lib/systemd
+append-line /tmp/setup-packages.sh:curl -sSf -L https://install.lix.systems/lix | sh -s -- install linux --no-confirm --no-start-daemon --enable-flakes
+append-line /tmp/setup-packages.sh:systemctl enable nix-daemon.socket
+append-line /tmp/setup-packages.sh:systemctl enable nix-daemon.service
+append-line /tmp/setup-packages.sh:echo "===== Verifying Nix binaries installed ====="
+append-line /tmp/setup-packages.sh:ls -lah /nix/var/nix/profiles/default/bin/nix
+append-line /tmp/setup-packages.sh:ls -lah /usr/lib/systemd/system/nix-daemon.* || ls -lah /nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.*
+append-line /tmp/setup-packages.sh:echo "===== Cleaning up to reduce image size ====="
+append-line /tmp/setup-packages.sh:apt-get clean
+append-line /tmp/setup-packages.sh:apt-get autoremove -y
+append-line /tmp/setup-packages.sh:rm -rf /var/lib/apt/lists/*
+append-line /tmp/setup-packages.sh:rm -rf /tmp/* /var/tmp/*
+append-line /tmp/setup-packages.sh:rm -rf /root/.cache
+append-line /tmp/setup-packages.sh:find /var/log -type f -exec truncate -s 0 {} \;
+run-command chmod +x /tmp/setup-packages.sh
+run-command /tmp/setup-packages.sh
+run-command rm -f /tmp/setup-packages.sh
 
 # Configure mise activation in /etc/skel/.bashrc for all new users
 run-command mkdir -p /etc/skel
@@ -35,21 +65,6 @@ append-line /etc/skel/.bashrc:export PATH="$HOME/.local/bin:$PATH"
 append-line /etc/skel/.bashrc:if command -v mise >/dev/null 2>&1; then
 append-line /etc/skel/.bashrc:  eval "$(mise activate bash)"
 append-line /etc/skel/.bashrc:fi
-
-# ============================================================================
-# Phase 3: Lix/Nix Installation Integration
-# ============================================================================
-
-# Create systemd directories for Nix installer (required in chroot)
-run-command mkdir -p /run/systemd/system
-run-command mkdir -p /var/lib/systemd
-
-# Install Lix (Nix fork) in multi-user mode with systemd daemon
-# Using official Lix installer with non-interactive flag
-run-command curl -sSf -L https://install.lix.systems/lix | sh -s -- install --no-confirm
-
-# Enable nix-daemon.service to start on boot
-run-command systemctl enable nix-daemon.service
 
 # Configure Nix daemon profile in /etc/skel/.bashrc for all new users
 append-line /etc/skel/.bashrc:
@@ -69,6 +84,3 @@ run-command chmod 644 /home/kali/.bashrc
 run-command mkdir -p /home/kali/.local/bin
 run-command chown -R kali:kali /home/kali/.local
 run-command chmod 755 /home/kali/.local /home/kali/.local/bin
-
-# Clean up package cache
-run-command apt-get autoremove -y && apt-get clean
