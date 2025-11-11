@@ -1,0 +1,53 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: testvm
+  labels:
+    test: kmi
+    kubevirt.io/flavor: default-features
+spec:
+  nodeSelector:
+    test: kmi
+  domain:
+    devices:
+      disks:
+        - name: containerdisk
+          bootOrder: 1
+          disk:
+            bus: virtio
+        - name: cloudinitdisk
+          disk:
+            bus: virtio
+  hostname: testvm
+  terminationGracePeriodSeconds: 0
+  accessCredentials:
+    - sshPublicKey:
+        source:
+          secret:
+            secretName: kargo-sshpubkey-kc2user
+        propagationMethod:
+          qemuGuestAgent:
+            users:
+              - kc2user
+  volumes:
+    - name: containerdisk
+      containerDisk:
+        image: docker.io/containercraft/fcos:42-dev
+        imagePullPolicy: Always
+    - name: cloudinitdisk
+      cloudInitConfigDrive:
+        userData: |-
+          {
+            "ignition": {
+              "version": "3.3.0"
+            },
+            "passwd": {
+              "users": [
+                {
+                  "groups": ["adm", "sudo", "wheel", "docker", "systemd-journal"],
+                  "name": "kc2user",
+                  "passwordHash": "$y$j9T$g4gmvVc2wOkbIgwHmmwB9.$Vb/kJJ6P/6Fr9/r.c0l7XhFvElEyMkUtQnFKG/8icE6"
+                }
+              ]
+            }

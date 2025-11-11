@@ -1,0 +1,13 @@
+# Create resolv.conf FIRST to enable DNS resolution for package installation
+# This is required because libguestfs appliance may not have valid DNS config
+run-command sh -c 'printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > /etc/resolv.conf'
+
+update
+install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,net-tools,screenfetch,btop
+run-command systemctl enable qemu-guest-agent
+run-command systemctl enable ssh
+run-command systemctl enable cloud-init-local.service
+run-command systemctl enable cloud-init.service
+run-command systemctl enable cloud-config.service
+run-command systemctl enable cloud-final.service
+run-command apt-get autoremove -y && apt-get clean
