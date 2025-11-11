@@ -10,8 +10,8 @@ __VERSION="2025.3"
 VIRT_SYSPREP_OPERATIONS=logfiles,bash-history,tmp-files,user-account,machine-id,ssh-hostkeys,ssh-userdir,net-hostname,net-hwaddr,dhcp-client-state,dhcp-server-state,package-manager-cache,utmp,customize
 # Kali image already has 110GB virtual size - no resize needed
 RESIZE_DISK=false
-# Disable sparsify for faster build iteration during testing
-SPARSIFY=false
+# Enable sparsify to compress the image for production
+SPARSIFY=true
 AMD64_BASE_URL=https://mirror.fcix.net/kali-images/current/
 AMD64_DOWNLOAD_FILE=kali-linux-${__VERSION}-qemu-amd64.7z
 AMD64_SHA256SUM=f7d4ffe5cad558c406e1e8f13160b0a8d60283c2eff00c7d7ac91794219916b0
