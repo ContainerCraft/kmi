@@ -159,7 +159,7 @@ if [[ -f "${DOWNLOAD_FILE}" ]]; then
 			(echo "Invalid checksum for existing file: ${SUMMER} check failed, removing and re-downloading" && rm -f "${DOWNLOAD_FILE}" && \
 			curl \
 				--fail \
-				--verbose \
+				--progress-bar \
 				--retry 3 \
 				--retry-delay 10 \
 				--retry-max-time 300 \
@@ -173,7 +173,7 @@ else
 	echo "Downloading ${DOWNLOAD_FILE}..."
 	curl \
 		--fail \
-		--verbose \
+		--progress-bar \
 		--retry 3 \
 		--retry-delay 10 \
 		--retry-max-time 300 \
