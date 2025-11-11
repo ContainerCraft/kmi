@@ -8,46 +8,31 @@ run-command sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFA
 run-command sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="console=tty1 console=ttyS0,115200n8"/' /etc/default/grub
 run-command echo 'GRUB_TERMINAL="console serial"' >> /etc/default/grub
 run-command echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
-run-command update-grub || grub-mkconfig -o /boot/grub/grub.cfg || true
+run-command update-grub || grub-mkconfig -o /boot/grub/grub.cfg
 
 # Enable serial getty service for login on serial console
-run-command systemctl enable serial-getty@ttyS0.service || true
-run-command ln -sf /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service || true
+run-command systemctl enable serial-getty@ttyS0.service
+run-command ln -sf /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service
 
 # Perform unattended system upgrade with all security updates
 # NOTE: Temporarily disabled for CircleCI runtime limits - re-enable when migrating to Tekton
 # Update package lists
-run-command apt-get update -y || true
+run-command apt-get update -y
 
 # Perform full unattended upgrade with environment variables inline
-# DISABLED FOR CIRCLECI: run-command DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite" || true
-# DISABLED FOR CIRCLECI: run-command DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get dist-upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite" || true
+# DISABLED FOR CIRCLECI: run-command DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite"
+# DISABLED FOR CIRCLECI: run-command DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get dist-upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite"
 
 # Install essential packages for cloud environments
-run-command DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  cloud-init \
-  cloud-initramfs-growroot \
-  cloud-guest-utils \
-  python3-jsonschema \
-  openssh-server \
-  qemu-guest-agent \
-  python3 \
-  tmux \
-  git \
-  vim \
-  btop \
-  curl \
-  ca-certificates \
-  xz-utils \
-  deborphan || true
+run-command DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cloud-init cloud-initramfs-growroot cloud-guest-utils python3-jsonschema openssh-server qemu-guest-agent python3 tmux git vim btop curl ca-certificates xz-utils
 
 # Enable essential services
-run-command systemctl enable qemu-guest-agent || true
-run-command systemctl enable ssh || true
-run-command systemctl enable cloud-init-local.service || true
-run-command systemctl enable cloud-init-network.service || true
-run-command systemctl enable cloud-config.service || true
-run-command systemctl enable cloud-final.service || true
+run-command systemctl enable qemu-guest-agent
+run-command systemctl enable ssh
+run-command systemctl enable cloud-init-local.service
+run-command systemctl enable cloud-init-network.service
+run-command systemctl enable cloud-config.service
+run-command systemctl enable cloud-final.service
 
 # Configure cloud-init for NoCloud datasource
 write /etc/cloud/cloud.cfg.d/90_datasource.cfg:datasource_list: [ NoCloud, None ]
@@ -55,20 +40,25 @@ append-line /etc/cloud/cloud.cfg.d/90_datasource.cfg:disable_root: false
 append-line /etc/cloud/cloud.cfg.d/90_datasource.cfg:manage_etc_hosts: true
 append-line /etc/cloud/cloud.cfg.d/90_datasource.cfg:preserve_hostname: false
 
+# Ensure cloud-init is NOT disabled (remove any disable files)
+run-command rm -f /etc/cloud/cloud-init.disabled || true
+run-command rm -f /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg || true
+run-command touch /etc/cloud/cloud-init.enabled
+
 # Do NOT clean cloud-init - it needs to run on first boot!
-# run-command cloud-init clean --logs || true
+# run-command cloud-init clean --logs
 
 # Install mise (polyglot runtime manager) - version agnostic approach
-run-command curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh || true
-run-command chmod 755 /usr/local/bin/mise || true
-run-command /usr/local/bin/mise --version || true
+run-command curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+run-command chmod 755 /usr/local/bin/mise
+run-command /usr/local/bin/mise --version
 
 # Install Lix/Nix package manager
-run-command mkdir -p /run/systemd/system || true
-run-command mkdir -p /var/lib/systemd || true
-run-command curl -sSf -L https://install.lix.systems/lix | sh -s -- install linux --no-confirm --no-start-daemon || true
-run-command systemctl enable nix-daemon.socket || true
-run-command systemctl enable nix-daemon.service || true
+run-command mkdir -p /run/systemd/system
+run-command mkdir -p /var/lib/systemd
+run-command curl -sSf -L https://install.lix.systems/lix | sh -s -- install linux --no-confirm --no-start-daemon
+run-command systemctl enable nix-daemon.socket
+run-command systemctl enable nix-daemon.service
 
 # Configure comprehensive Nix/Lix settings for production use
 write /etc/nix/nix.conf:# Lix/Nix Configuration - Generated by virt-sysprep
@@ -124,16 +114,16 @@ run-command rm -f /usr/lib/systemd/system-generators/systemd-sslh-generator || t
 # Remove old LLVM version (keep only latest)
 run-command rm -rf /usr/lib/llvm-18 || true
 
-# Clean up locales - keep only English
-run-command echo 'LANG=en_US.UTF-8' > /etc/locale.conf || true
-run-command locale-gen en_US.UTF-8 || true
-run-command rm -rf /usr/share/locale/[!e]* || true
-run-command rm -rf /usr/share/locale/e[!n]* || true
+# Configure English locale
+run-command echo 'LANG=en_US.UTF-8' > /etc/locale.conf
+run-command locale-gen en_US.UTF-8
+# Note: Keeping all locales to avoid breaking system packages that may depend on locale files
 
-# Remove excessive documentation while keeping man pages
-run-command find /usr/share/doc -type f \( -name "*.pdf" -o -name "*.html" \) -delete || true
-run-command find /usr/share/doc -type f -name "changelog*" -delete || true
-run-command find /usr/share/doc -type f -name "NEWS*" -delete || true
+# Remove only large documentation files while keeping essential docs
+# PDF and HTML docs can be large and are rarely needed in cloud environments
+run-command find /usr/share/doc -type f -name "*.pdf" -size +1M -delete || true
+run-command find /usr/share/doc -type f -name "*.html" -size +100k -delete || true
+# Keep changelogs and NEWS files as they're usually small and sometimes needed
 
 # Remove LaTeX if present (not needed in cloud VMs)
 run-command DEBIAN_FRONTEND=noninteractive apt-get remove -y --auto-remove --purge texlive* tex-common 2>/dev/null || true
@@ -142,24 +132,27 @@ run-command rm -rf /usr/share/texlive /usr/share/texmf || true
 # Remove .NET runtime if present (unless specifically needed)
 run-command rm -rf /usr/share/dotnet || true
 
-# Clean up Python cache files
-run-command find /usr -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-run-command find /usr -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete || true
+# Clean up Python cache files - ONLY in safe locations, not system packages
+# Cloud-init and other system tools need their Python files intact
+run-command find /root -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+run-command find /home -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+run-command find /tmp -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+run-command find /var/tmp -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # Remove unnecessary kernel modules for virtual environments
 run-command find /lib/modules -name "*.ko" -path "*/kernel/drivers/gpu/*" -delete 2>/dev/null || true
 run-command find /lib/modules -name "*.ko" -path "*/kernel/drivers/bluetooth/*" -delete 2>/dev/null || true
 
-# Remove orphaned packages
-run-command deborphan | xargs -r apt-get -y remove --purge 2>/dev/null || true
+# Note: Skipping deborphan to avoid accidentally removing cloud-init dependencies
+# Orphaned package removal can be too aggressive and remove needed libraries
 
 # Final cleanup of package manager caches and logs
-run-command apt-get clean || true
-run-command apt-get autoclean || true
-run-command DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y || true
+run-command apt-get clean
+run-command apt-get autoclean
+run-command DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y
 run-command rm -rf /var/cache/apt/archives/* || true
-run-command rm -rf /var/lib/apt/lists/* || true
+run-command rm -rf /var/lib/apt/lists/*
 run-command journalctl --vacuum-size=1M || true
-run-command find /var/log -type f -exec truncate -s 0 {} \; || true
+run-command find /var/log -type f -exec truncate -s 0 {} \;
 run-command rm -rf /tmp/* /var/tmp/* || true
 run-command rm -rf /root/.cache || true
