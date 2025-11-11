@@ -16,6 +16,14 @@ set -ex
 export LIBGUESTFS_BACKEND=direct
 export LIBGUESTFS_CACHEDIR=${HOME}
 
+# Performance tuning for libguestfs
+# Increase appliance memory from default 768MB to 2GB for faster operations
+export LIBGUESTFS_MEMSIZE=2048
+# Use 4 vCPUs in the appliance for parallel operations (default is 1)
+export LIBGUESTFS_SMP=4
+# Use tmpfs for better I/O performance if enough RAM available
+export LIBGUESTFS_TMPDIR=/dev/shm
+
 # Force KVM hardware acceleration if available for maximum performance
 # Only enable if /dev/kvm exists to avoid errors on systems without KVM
 if [[ -e /dev/kvm ]]; then
@@ -33,7 +41,12 @@ fi
 QEMU_WRAPPER=$(mktemp)
 cat > "${QEMU_WRAPPER}" << 'EOF'
 #!/bin/bash
-exec qemu-system-x86_64 -cpu host,la57=off "$@"
+# Performance-optimized QEMU wrapper for libguestfs appliance
+exec qemu-system-x86_64 \
+  -cpu host,la57=off \
+  -machine accel=kvm \
+  -smp 4,sockets=1,cores=4,threads=1 \
+  "$@"
 EOF
 chmod +x "${QEMU_WRAPPER}"
 export LIBGUESTFS_HV="${QEMU_WRAPPER}"
@@ -53,6 +66,8 @@ DOWNLOAD_FILE=
 SHASUM="${ARCH^^}_SHA256SUM"
 CUSTOMIZE=true
 SPARSIFY=true
+RESIZE_DISK=true
+RESIZE_AMOUNT="+30G"
 VIRT_SYSPREP_OPERATIONS=
 
 # shellcheck disable=SC1090
@@ -134,23 +149,46 @@ if [[ "${FLAVOR}" == "opensuse-tumbleweed" ]]; then
 fi
 
 # Download qcow2 with retry logic for network resilience
-curl \
-	--fail \
-	--verbose \
-	--retry 3 \
-	--retry-delay 10 \
-	--retry-max-time 300 \
-	--connect-timeout 60 \
-	--output "${DOWNLOAD_FILE}" \
-	--location "${BASE_URL}"/"${DOWNLOAD_FILE}"
-
-# Verify Checksum (skip if checksum not provided, e.g. for beta releases)
-if [[ -n "${!SHASUM}" ]]; then
-	echo "${!SHASUM} ${DOWNLOAD_FILE}" |
-		${SUMMER} --check --status ||
-		(echo "Invalid checksum: ${SUMMER} check failed" && exit 1)
+if [[ -f "${DOWNLOAD_FILE}" ]]; then
+	echo "Download file ${DOWNLOAD_FILE} already exists, skipping download"
+	# Still verify checksum if file exists
+	if [[ -n "${!SHASUM}" ]]; then
+		echo "Verifying checksum of existing file..."
+		echo "${!SHASUM} ${DOWNLOAD_FILE}" |
+			${SUMMER} --check --status ||
+			(echo "Invalid checksum for existing file: ${SUMMER} check failed, removing and re-downloading" && rm -f "${DOWNLOAD_FILE}" && \
+			curl \
+				--fail \
+				--verbose \
+				--retry 3 \
+				--retry-delay 10 \
+				--retry-max-time 300 \
+				--connect-timeout 60 \
+				--output "${DOWNLOAD_FILE}" \
+				--location "${BASE_URL}"/"${DOWNLOAD_FILE}")
+	else
+		echo "Warning: Checksum validation skipped (no checksum provided for ${ARCH})"
+	fi
 else
-	echo "Warning: Checksum validation skipped (no checksum provided for ${ARCH})"
+	echo "Downloading ${DOWNLOAD_FILE}..."
+	curl \
+		--fail \
+		--verbose \
+		--retry 3 \
+		--retry-delay 10 \
+		--retry-max-time 300 \
+		--connect-timeout 60 \
+		--output "${DOWNLOAD_FILE}" \
+		--location "${BASE_URL}"/"${DOWNLOAD_FILE}"
+
+	# Verify Checksum (skip if checksum not provided, e.g. for beta releases)
+	if [[ -n "${!SHASUM}" ]]; then
+		echo "${!SHASUM} ${DOWNLOAD_FILE}" |
+			${SUMMER} --check --status ||
+			(echo "Invalid checksum: ${SUMMER} check failed" && exit 1)
+	else
+		echo "Warning: Checksum validation skipped (no checksum provided for ${ARCH})"
+	fi
 fi
 
 # Unarchive image
@@ -185,13 +223,19 @@ if [[ "${CONVERT}" == "true" ]]; then
 fi
 
 if [[ "${CUSTOMIZE}" == "true" ]]; then
-	# Grow disk size (increased to +30G for Nix store)
-	qemu-img resize "${QCOW2_TMPFILE}" +30G
+	# Grow disk size if configured
+	if [[ "${RESIZE_DISK}" == "true" ]]; then
+		qemu-img resize "${QCOW2_TMPFILE}" "${RESIZE_AMOUNT}"
+		echo "Resized disk by ${RESIZE_AMOUNT}"
+	else
+		echo "Skipping disk resize (RESIZE_DISK=false)"
+	fi
 
 	# Pre-Sparsify (optional - can be disabled per flavor)
 	if [[ "${SPARSIFY}" == "true" ]]; then
 		sudo virt-sparsify \
 			--verbose \
+			--check-tmpdir ignore \
 			--inplace \
 			"${QCOW2_TMPFILE}"
 	else
@@ -213,6 +257,7 @@ if [[ "${CUSTOMIZE}" == "true" ]]; then
 	if [[ "${SPARSIFY}" == "true" ]]; then
 		sudo virt-sparsify \
 			--verbose \
+			--check-tmpdir ignore \
 			--compress \
 			"${QCOW2_TMPFILE}" \
 			"${QCOW2_FILE}"

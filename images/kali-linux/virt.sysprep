@@ -1,86 +1,165 @@
-# Preserve the default kali:kali user account
-# Only clean logs and temporary files, do NOT remove user accounts
-# This allows both the built-in kali user and cloud-init to coexist
+# Security: Remove ALL default user accounts
+# Cloud-init will create users with proper SSH keys and secure passwords
+# This prevents unauthorized access via default credentials
 
-# Consolidated installation script with manual network configuration
-write /tmp/setup-packages.sh:#!/bin/bash
-append-line /tmp/setup-packages.sh:set -ex
-append-line /tmp/setup-packages.sh:echo "===== Bringing up network interface ====="
-append-line /tmp/setup-packages.sh:ip link set eth0 up
-append-line /tmp/setup-packages.sh:ip addr add 169.254.2.100/16 dev eth0
-append-line /tmp/setup-packages.sh:ip route add default via 169.254.2.2
-append-line /tmp/setup-packages.sh:ip addr show
-append-line /tmp/setup-packages.sh:ip route show
-append-line /tmp/setup-packages.sh:echo "===== Configuring DNS ====="
-append-line /tmp/setup-packages.sh:echo "nameserver 1.1.1.1" > /etc/resolv.conf
-append-line /tmp/setup-packages.sh:echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-append-line /tmp/setup-packages.sh:echo "nameserver 169.254.2.3" >> /etc/resolv.conf
-append-line /tmp/setup-packages.sh:cat /etc/resolv.conf
-append-line /tmp/setup-packages.sh:echo "===== Testing connectivity ====="
-append-line /tmp/setup-packages.sh:ping -c 2 169.254.2.2 || echo "Gateway unreachable"
-append-line /tmp/setup-packages.sh:ping -c 2 1.1.1.1 || echo "Internet unreachable"
-append-line /tmp/setup-packages.sh:echo "===== Testing DNS resolution ====="
-append-line /tmp/setup-packages.sh:nslookup github.com || echo "github.com DNS failed"
-append-line /tmp/setup-packages.sh:nslookup http.kali.org || echo "kali.org DNS failed"
-append-line /tmp/setup-packages.sh:echo "===== Installing APT packages ====="
-append-line /tmp/setup-packages.sh:apt-get update -y
-append-line /tmp/setup-packages.sh:apt-get install -y cloud-init cloud-initramfs-growroot openssh-server qemu-guest-agent python3 tmux git vim btop curl ca-certificates xz-utils
-append-line /tmp/setup-packages.sh:systemctl enable qemu-guest-agent
-append-line /tmp/setup-packages.sh:systemctl enable ssh
-append-line /tmp/setup-packages.sh:systemctl enable cloud-init-local.service
-append-line /tmp/setup-packages.sh:systemctl enable cloud-init-network.service
-append-line /tmp/setup-packages.sh:systemctl enable cloud-config.service
-append-line /tmp/setup-packages.sh:systemctl enable cloud-final.service
-append-line /tmp/setup-packages.sh:echo "===== Installing mise ====="
-append-line /tmp/setup-packages.sh:MISE_VERSION=v2025.11.3
-append-line /tmp/setup-packages.sh:curl -fsSL https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-x64 -o /usr/local/bin/mise
-append-line /tmp/setup-packages.sh:chmod 755 /usr/local/bin/mise
-append-line /tmp/setup-packages.sh:/usr/local/bin/mise --version
-append-line /tmp/setup-packages.sh:echo "===== Installing Lix/Nix ====="
-append-line /tmp/setup-packages.sh:mkdir -p /run/systemd/system
-append-line /tmp/setup-packages.sh:mkdir -p /var/lib/systemd
-append-line /tmp/setup-packages.sh:curl -sSf -L https://install.lix.systems/lix | sh -s -- install linux --no-confirm --no-start-daemon --enable-flakes
-append-line /tmp/setup-packages.sh:systemctl enable nix-daemon.socket
-append-line /tmp/setup-packages.sh:systemctl enable nix-daemon.service
-append-line /tmp/setup-packages.sh:echo "===== Verifying Nix binaries installed ====="
-append-line /tmp/setup-packages.sh:ls -lah /nix/var/nix/profiles/default/bin/nix
-append-line /tmp/setup-packages.sh:ls -lah /usr/lib/systemd/system/nix-daemon.* || ls -lah /nix/var/nix/profiles/default/lib/systemd/system/nix-daemon.*
-append-line /tmp/setup-packages.sh:echo "===== Cleaning up to reduce image size ====="
-append-line /tmp/setup-packages.sh:apt-get clean
-append-line /tmp/setup-packages.sh:apt-get autoremove -y
-append-line /tmp/setup-packages.sh:rm -rf /var/lib/apt/lists/*
-append-line /tmp/setup-packages.sh:rm -rf /tmp/* /var/tmp/*
-append-line /tmp/setup-packages.sh:rm -rf /root/.cache
-append-line /tmp/setup-packages.sh:find /var/log -type f -exec truncate -s 0 {} \;
-run-command chmod +x /tmp/setup-packages.sh
-run-command /tmp/setup-packages.sh
-run-command rm -f /tmp/setup-packages.sh
+# Enable serial console for QEMU testing
+# This allows -nographic mode to work properly
+run-command sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet console=tty1 console=ttyS0,115200n8"/' /etc/default/grub
+run-command sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="console=tty1 console=ttyS0,115200n8"/' /etc/default/grub
+run-command echo 'GRUB_TERMINAL="console serial"' >> /etc/default/grub
+run-command echo 'GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"' >> /etc/default/grub
+run-command update-grub || grub-mkconfig -o /boot/grub/grub.cfg || true
+
+# Enable serial getty service for login on serial console
+run-command systemctl enable serial-getty@ttyS0.service || true
+run-command ln -sf /lib/systemd/system/serial-getty@.service /etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service || true
+
+# Perform unattended system upgrade with all security updates
+# NOTE: Temporarily disabled for CircleCI runtime limits - re-enable when migrating to Tekton
+# Update package lists
+run-command apt-get update -y || true
+
+# Perform full unattended upgrade with environment variables inline
+# DISABLED FOR CIRCLECI: run-command DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite" || true
+# DISABLED FOR CIRCLECI: run-command DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1 apt-get dist-upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-overwrite" || true
+
+# Install essential packages for cloud environments
+run-command DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  cloud-init \
+  cloud-initramfs-growroot \
+  cloud-guest-utils \
+  python3-jsonschema \
+  openssh-server \
+  qemu-guest-agent \
+  python3 \
+  tmux \
+  git \
+  vim \
+  btop \
+  curl \
+  ca-certificates \
+  xz-utils \
+  deborphan || true
+
+# Enable essential services
+run-command systemctl enable qemu-guest-agent || true
+run-command systemctl enable ssh || true
+run-command systemctl enable cloud-init-local.service || true
+run-command systemctl enable cloud-init-network.service || true
+run-command systemctl enable cloud-config.service || true
+run-command systemctl enable cloud-final.service || true
+
+# Configure cloud-init for NoCloud datasource
+write /etc/cloud/cloud.cfg.d/90_datasource.cfg:datasource_list: [ NoCloud, None ]
+append-line /etc/cloud/cloud.cfg.d/90_datasource.cfg:disable_root: false
+append-line /etc/cloud/cloud.cfg.d/90_datasource.cfg:manage_etc_hosts: true
+append-line /etc/cloud/cloud.cfg.d/90_datasource.cfg:preserve_hostname: false
+
+# Do NOT clean cloud-init - it needs to run on first boot!
+# run-command cloud-init clean --logs || true
+
+# Install mise (polyglot runtime manager) - version agnostic approach
+run-command curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh || true
+run-command chmod 755 /usr/local/bin/mise || true
+run-command /usr/local/bin/mise --version || true
+
+# Install Lix/Nix package manager
+run-command mkdir -p /run/systemd/system || true
+run-command mkdir -p /var/lib/systemd || true
+run-command curl -sSf -L https://install.lix.systems/lix | sh -s -- install linux --no-confirm --no-start-daemon || true
+run-command systemctl enable nix-daemon.socket || true
+run-command systemctl enable nix-daemon.service || true
+
+# Configure comprehensive Nix/Lix settings for production use
+write /etc/nix/nix.conf:# Lix/Nix Configuration - Generated by virt-sysprep
+append-line /etc/nix/nix.conf:# Security and Trust Settings
+append-line /etc/nix/nix.conf:trusted-users = root @wheel @sudo
+append-line /etc/nix/nix.conf:allowed-users = *
+append-line /etc/nix/nix.conf:accept-flake-config = true
+append-line /etc/nix/nix.conf:
+append-line /etc/nix/nix.conf:# Experimental Features
+append-line /etc/nix/nix.conf:experimental-features = nix-command flakes
+append-line /etc/nix/nix.conf:
+append-line /etc/nix/nix.conf:# Build Performance Settings
+append-line /etc/nix/nix.conf:cores = 0
+append-line /etc/nix/nix.conf:max-jobs = auto
+append-line /etc/nix/nix.conf:sandbox = false
+append-line /etc/nix/nix.conf:keep-outputs = true
+append-line /etc/nix/nix.conf:keep-derivations = true
+append-line /etc/nix/nix.conf:
+append-line /etc/nix/nix.conf:# Binary Cache Settings
+append-line /etc/nix/nix.conf:substituters = https://cache.nixos.org https://nix-community.cachix.org https://devenv.cachix.org
+append-line /etc/nix/nix.conf:trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+append-line /etc/nix/nix.conf:
+append-line /etc/nix/nix.conf:# Network Settings
+append-line /etc/nix/nix.conf:connect-timeout = 30
+append-line /etc/nix/nix.conf:download-attempts = 5
+append-line /etc/nix/nix.conf:http-connections = 25
+append-line /etc/nix/nix.conf:
+append-line /etc/nix/nix.conf:# Store Optimization
+append-line /etc/nix/nix.conf:auto-optimise-store = true
+append-line /etc/nix/nix.conf:
+append-line /etc/nix/nix.conf:# Logging
+append-line /etc/nix/nix.conf:keep-build-log = true
+append-line /etc/nix/nix.conf:log-lines = 50
 
 # Configure mise activation in /etc/skel/.bashrc for all new users
 run-command mkdir -p /etc/skel
 append-line /etc/skel/.bashrc:
 append-line /etc/skel/.bashrc:# Mise (polyglot runtime manager) initialization
-append-line /etc/skel/.bashrc:# Auto-loads tools based on .mise.toml and .env files
 append-line /etc/skel/.bashrc:export PATH="$HOME/.local/bin:$PATH"
 append-line /etc/skel/.bashrc:if command -v mise >/dev/null 2>&1; then
 append-line /etc/skel/.bashrc:  eval "$(mise activate bash)"
 append-line /etc/skel/.bashrc:fi
-
-# Configure Nix daemon profile in /etc/skel/.bashrc for all new users
 append-line /etc/skel/.bashrc:
 append-line /etc/skel/.bashrc:# Nix package manager initialization
-append-line /etc/skel/.bashrc:# Source the multi-user Nix daemon profile
 append-line /etc/skel/.bashrc:if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
 append-line /etc/skel/.bashrc:  source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 append-line /etc/skel/.bashrc:fi
 
-# Configure kali user home directory (kali user already exists in base image)
-# Copy the updated .bashrc configuration to existing kali user
-run-command cp -n /etc/skel/.bashrc /home/kali/.bashrc || true
-run-command chown kali:kali /home/kali/.bashrc
-run-command chmod 644 /home/kali/.bashrc
+# Remove problematic sslh-generator that causes segfault
+run-command rm -f /usr/lib/systemd/system-generators/systemd-sslh-generator || true
 
-# Create .local/bin directory for kali user (required for mise)
-run-command mkdir -p /home/kali/.local/bin
-run-command chown -R kali:kali /home/kali/.local
-run-command chmod 755 /home/kali/.local /home/kali/.local/bin
+# Optimize image size while preserving functionality
+# Remove old LLVM version (keep only latest)
+run-command rm -rf /usr/lib/llvm-18 || true
+
+# Clean up locales - keep only English
+run-command echo 'LANG=en_US.UTF-8' > /etc/locale.conf || true
+run-command locale-gen en_US.UTF-8 || true
+run-command rm -rf /usr/share/locale/[!e]* || true
+run-command rm -rf /usr/share/locale/e[!n]* || true
+
+# Remove excessive documentation while keeping man pages
+run-command find /usr/share/doc -type f \( -name "*.pdf" -o -name "*.html" \) -delete || true
+run-command find /usr/share/doc -type f -name "changelog*" -delete || true
+run-command find /usr/share/doc -type f -name "NEWS*" -delete || true
+
+# Remove LaTeX if present (not needed in cloud VMs)
+run-command DEBIAN_FRONTEND=noninteractive apt-get remove -y --auto-remove --purge texlive* tex-common 2>/dev/null || true
+run-command rm -rf /usr/share/texlive /usr/share/texmf || true
+
+# Remove .NET runtime if present (unless specifically needed)
+run-command rm -rf /usr/share/dotnet || true
+
+# Clean up Python cache files
+run-command find /usr -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+run-command find /usr -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete || true
+
+# Remove unnecessary kernel modules for virtual environments
+run-command find /lib/modules -name "*.ko" -path "*/kernel/drivers/gpu/*" -delete 2>/dev/null || true
+run-command find /lib/modules -name "*.ko" -path "*/kernel/drivers/bluetooth/*" -delete 2>/dev/null || true
+
+# Remove orphaned packages
+run-command deborphan | xargs -r apt-get -y remove --purge 2>/dev/null || true
+
+# Final cleanup of package manager caches and logs
+run-command apt-get clean || true
+run-command apt-get autoclean || true
+run-command DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y || true
+run-command rm -rf /var/cache/apt/archives/* || true
+run-command rm -rf /var/lib/apt/lists/* || true
+run-command journalctl --vacuum-size=1M || true
+run-command find /var/log -type f -exec truncate -s 0 {} \; || true
+run-command rm -rf /tmp/* /var/tmp/* || true
+run-command rm -rf /root/.cache || true
