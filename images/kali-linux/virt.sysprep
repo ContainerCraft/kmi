@@ -8,13 +8,28 @@ write /etc/resolv.conf:nameserver 1.1.1.1
 append-line /etc/resolv.conf:nameserver 8.8.8.8
 
 update
-install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,btop,curl,ca-certificates,xz-utils
+install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,btop,curl,ca-certificates,xz-utils,locales
 run-command systemctl enable qemu-guest-agent
 run-command systemctl enable ssh
 run-command systemctl enable cloud-init-local.service
 run-command systemctl enable cloud-init-network.service
 run-command systemctl enable cloud-config.service
 run-command systemctl enable cloud-final.service
+
+# ============================================================================
+# Phase 1.5: Locale Configuration
+# ============================================================================
+
+# Generate en_US.UTF-8 locale to prevent bash warnings
+run-command sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+run-command locale-gen
+run-command update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+# Set system-wide locale defaults
+write /etc/default/locale:LANG=en_US.UTF-8
+append-line /etc/default/locale:LC_ALL=en_US.UTF-8
+append-line /etc/default/locale:LANGUAGE=en_US.UTF-8
+append-line /etc/default/locale:LC_CTYPE=en_US.UTF-8
 
 # ============================================================================
 # Phase 2: Mise Installation Integration
@@ -28,6 +43,10 @@ run-command /usr/local/bin/mise --version
 
 # Configure mise activation in /etc/skel/.bashrc for all new users
 run-command mkdir -p /etc/skel
+append-line /etc/skel/.bashrc:
+append-line /etc/skel/.bashrc:# Locale configuration
+append-line /etc/skel/.bashrc:export LANG=en_US.UTF-8
+append-line /etc/skel/.bashrc:export LC_ALL=en_US.UTF-8
 append-line /etc/skel/.bashrc:
 append-line /etc/skel/.bashrc:# Mise (polyglot runtime manager) initialization
 append-line /etc/skel/.bashrc:# Auto-loads tools based on .mise.toml and .env files
