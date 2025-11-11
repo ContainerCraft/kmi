@@ -1,0 +1,173 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kmi-runner-userdata
+  namespace: default
+type: Opaque
+stringData:
+  userdata: |
+    #cloud-config
+    hostname: kmi-runner
+    users:
+      - name: runner
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        shell: /bin/bash
+        groups: sudo, docker, kvm, libvirt
+        lock_passwd: false
+
+    package_update: true
+    package_upgrade: true
+    packages:
+      - docker.io
+      - docker-buildx
+      - qemu-kvm
+      - qemu-system-x86
+      - qemu-system-arm
+      - qemu-user-static
+      - qemu-utils
+      - libvirt-daemon-system
+      - libvirt-clients
+      - cloud-image-utils
+      - socat
+      - libguestfs-tools
+      - p7zip-full
+      - skopeo
+      - git
+      - curl
+      - wget
+      - jq
+      - bc
+      - build-essential
+      - python3
+      - python3-pip
+      - gh
+      - bats
+
+    runcmd:
+      - systemctl enable --now docker
+      - systemctl enable --now libvirtd
+      - usermod -aG docker runner
+      - usermod -aG kvm runner
+      - usermod -aG libvirt runner
+      - chmod 666 /dev/kvm
+      - echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666"' > /etc/udev/rules.d/99-kvm.rules
+      - udevadm control --reload-rules
+      - udevadm trigger --name-match=kvm
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: kmi-runner
+  namespace: default
+  labels:
+    app: kmi-runner
+    role: ci-runner
+    os: ubuntu
+  annotations:
+    description: "KMI Test Runner VM - Docker, KVM, QEMU for direct image testing"
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+    - metadata:
+        name: kmi-runner-root
+      spec:
+        pvc:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 256Gi
+          storageClassName: hostpath-provisioner
+        source:
+          registry:
+            url: docker://docker.io/containercraft/ubuntu:24-04-dev
+  template:
+    metadata:
+      labels:
+        app: kmi-runner
+        os: ubuntu
+        role: ci-runner
+      annotations:
+        vm.kubevirt.io/os: ubuntu
+    spec:
+      hostname: kmi-runner
+      terminationGracePeriodSeconds: 30
+      accessCredentials:
+        - sshPublicKey:
+            propagationMethod:
+              qemuGuestAgent:
+                users:
+                  - runner
+            source:
+              secret:
+                secretName: kargo-sshpubkey-kc2user
+      domain:
+        machine:
+          type: q35
+        firmware:
+          bootloader:
+            bios: {}
+          serial: kmi-runner-001
+          uuid: c1d2e3f4-5678-9abc-def0-123456789abc
+        clock:
+          utc: {}
+          timer:
+            hpet:
+              present: false
+            pit:
+              tickPolicy: delay
+            rtc:
+              tickPolicy: catchup
+            hyperv: {}
+        cpu:
+          sockets: 1
+          cores: 8
+          threads: 2
+          model: host-passthrough
+          dedicatedCpuPlacement: false
+          features:
+            - name: vmx
+              policy: require
+        features:
+          acpi: {}
+          apic: {}
+          smm:
+            enabled: true
+        resources:
+          requests:
+            memory: 32Gi
+            devices.kubevirt.io/kvm: "1"
+          limits:
+            memory: 32Gi
+        devices:
+          autoattachPodInterface: false
+          autoattachSerialConsole: true
+          autoattachGraphicsDevice: true
+          networkInterfaceMultiqueue: true
+          rng: {}
+          interfaces:
+            - bridge: {}
+              macAddress: 52:54:00:0b:00:99
+              model: virtio
+              name: enp1s0
+          disks:
+            - name: root-disk
+              bootOrder: 1
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+      networks:
+        - multus:
+            networkName: br0-network-attachment
+          name: enp1s0
+      volumes:
+        - name: root-disk
+          dataVolume:
+            name: kmi-runner-root
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            secretRef:
+              name: kmi-runner-userdata
