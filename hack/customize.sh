@@ -235,7 +235,6 @@ if [[ "${CUSTOMIZE}" == "true" ]]; then
 	if [[ "${SPARSIFY}" == "true" ]]; then
 		sudo virt-sparsify \
 			--verbose \
-			--check-tmpdir ignore \
 			--inplace \
 			"${QCOW2_TMPFILE}"
 	else
