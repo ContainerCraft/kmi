@@ -8,13 +8,17 @@ write /etc/resolv.conf:nameserver 1.1.1.1
 append-line /etc/resolv.conf:nameserver 8.8.8.8
 
 update
-install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,btop,curl,ca-certificates,xz-utils,locales
+install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,python3,tmux,git,vim,btop,curl,ca-certificates,xz-utils,locales,bridge-utils
 run-command systemctl enable qemu-guest-agent
 run-command systemctl enable ssh
 run-command systemctl enable cloud-init-local.service
 run-command systemctl enable cloud-init-network.service
 run-command systemctl enable cloud-config.service
 run-command systemctl enable cloud-final.service
+
+# Fix NetworkManager to manage interfaces from ifupdown/cloud-init
+# Default Kali has managed=false which breaks cloud-init network config
+run-command sed -i 's/managed=false/managed=true/' /etc/NetworkManager/NetworkManager.conf
 
 # ============================================================================
 # Phase 1.5: Locale Configuration
