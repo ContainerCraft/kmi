@@ -185,8 +185,8 @@ if [[ "${CONVERT}" == "true" ]]; then
 fi
 
 if [[ "${CUSTOMIZE}" == "true" ]]; then
-	# Grow disk size (increased to +30G for Nix store)
-	qemu-img resize "${QCOW2_TMPFILE}" +30G
+	# Grow disk size (default +30G, can be overridden via QCOW2_RESIZE in env.sh)
+	qemu-img resize "${QCOW2_TMPFILE}" "${QCOW2_RESIZE:-+30G}"
 
 	# Pre-Sparsify (optional - can be disabled per flavor)
 	if [[ "${SPARSIFY}" == "true" ]]; then

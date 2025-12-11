@@ -7,7 +7,7 @@
 write /etc/resolv.conf:nameserver 1.1.1.1
 append-line /etc/resolv.conf:nameserver 8.8.8.8
 
-update
+#update
 install cloud-init,cloud-initramfs-growroot,openssh-server,qemu-guest-agent,curl,ca-certificates,xz-utils,locales,bridge-utils
 run-command systemctl enable qemu-guest-agent
 run-command systemctl enable ssh
