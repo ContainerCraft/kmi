@@ -93,5 +93,16 @@ run-command mkdir -p /home/kali/.local/bin
 run-command chown -R kali:kali /home/kali/.local
 run-command chmod 755 /home/kali/.local /home/kali/.local/bin
 
+# ============================================================================
+# Phase 4: Serial Console Configuration
+# ============================================================================
+
+# Enable serial console output in GRUB for virtctl console access
+run-command sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="console=tty0 console=ttyS0,115200n8"/' /etc/default/grub
+run-command update-grub
+
+# Enable getty on serial console for login prompt
+run-command systemctl enable serial-getty@ttyS0.service
+
 # Clean up package cache
 run-command apt-get autoremove -y && apt-get clean
